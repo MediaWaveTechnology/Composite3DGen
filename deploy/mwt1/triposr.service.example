@@ -1,15 +1,10 @@
-# Example systemd user unit for documenting a pinned TripoSR checkout on MWT1.
-# Jobs are driven over SSH from the controller — this is not a long-running daemon.
-# Never embed API keys or Hugging Face tokens here.
-#
 # NOTE: MWT1 is Apple M4 / Metal — use PyTorch MPS (experimental), not CUDA.
-# Put checkout + weights on AlanTBrain (home ~13 GiB free is too tight).
-# Do not enable until: volume writable, pin checked out, MPS smoke passes.
+# Paths: /Volumes/AlanTBrain/Composite3DGen/tools/ (live layout).
+# Agent-worker lacks FDA on AlanTBrain — enable/run via Terminal or grant FDA.
 #
 #   ~/.config/systemd/user/composite3dgen-triposr.service
 #
 # Pin: 107cefdc244c39106fa830359024f6a2f1c78871
-# Root: /Volumes/AlanTBrain/composite3dgen
 
 [Unit]
 Description=Composite3DGen TripoSR env smoke (example oneshot)
@@ -17,9 +12,9 @@ After=default.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/Volumes/AlanTBrain/composite3dgen/vendor/TripoSR
-Environment=PATH=/Volumes/AlanTBrain/composite3dgen/.venv/bin:/opt/homebrew/bin:/usr/bin
-ExecStart=/Volumes/AlanTBrain/composite3dgen/.venv/bin/python run.py --help
+WorkingDirectory=/Volumes/AlanTBrain/Composite3DGen/tools/TripoSR
+Environment=PATH=/Volumes/AlanTBrain/Composite3DGen/tools/.venv/bin:/opt/homebrew/bin:/usr/bin
+ExecStart=/Volumes/AlanTBrain/Composite3DGen/tools/.venv/bin/python run.py --help
 # Real reconstruct (MPS):
 #   python run.py /path/to/input.png --output-dir /path/to/out \
 #     --model-save-format glb --device mps

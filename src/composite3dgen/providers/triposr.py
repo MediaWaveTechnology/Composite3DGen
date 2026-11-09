@@ -121,8 +121,9 @@ class TripoSRAdapter:
 
         # Upstream run.py writes {output_dir}/{i}/mesh.{obj|glb}. Prefer glb.
         # device=mps on Apple M4 (experimental); use cuda:0 on Linux CUDA hosts.
+        # Checkout lives under …/Composite3DGen/tools/TripoSR (not vendor/).
         cmd = (
-            f"cd {self.remote_root}/vendor/TripoSR && "
+            f"cd {DEFAULT_TRIPOSR_DIR} && "
             f"python {self.run_py} {remote_input} "
             f"--output-dir {remote_out} --model-save-format glb "
             f"--device {self.device}"

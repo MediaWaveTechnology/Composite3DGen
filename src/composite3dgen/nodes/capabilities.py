@@ -83,13 +83,12 @@ REMEDIATIONS: dict[CapabilityName, str] = {
         "(`--executor local`)."
     ),
     "job_root_writable": (
-        "Job root not writable. Prefer AlanTBrain: "
-        "`mkdir -p /Volumes/AlanTBrain/composite3dgen/jobs && "
-        "touch /Volumes/AlanTBrain/composite3dgen/jobs/.write_test && "
-        "rm /Volumes/AlanTBrain/composite3dgen/jobs/.write_test`. "
-        "If listing/mkdir fails with Operation not permitted, fix volume mount "
-        "ACLs for user `davethompson`. Home `~/composite3dgen/jobs` is bootstrap "
-        "only (~13 GiB free — too tight for media/weights)."
+        "Job root not writable. Canonical path: "
+        "`/Volumes/AlanTBrain/Composite3DGen/jobs/` "
+        "(~/composite3dgen/jobs is a symlink). If Operation not permitted, "
+        "Cursor agent-worker lacks Full Disk Access — run mkdir/write via "
+        "Terminal.app (FDA) or grant FDA to the agent worker. See "
+        "deploy/mwt1/README.md."
     ),
     "ffmpeg": (
         "ffmpeg missing on MWT1. Install (apt/brew) so `command -v ffmpeg` "
@@ -98,7 +97,7 @@ REMEDIATIONS: dict[CapabilityName, str] = {
     "python_image": (
         "Python image stack incomplete on MWT1. Need python3 with Pillow "
         "(`python3 -c 'from PIL import Image'`). Optional: numpy. "
-        "Install into a venv under `/Volumes/AlanTBrain/composite3dgen/`."
+        "Install into a venv under `/Volumes/AlanTBrain/Composite3DGen/tools/`."
     ),
     "cuda_pytorch": (
         "PyTorch GPU backend unavailable for TripoSR. On mwt1 (Apple M4) the "
@@ -113,13 +112,13 @@ REMEDIATIONS: dict[CapabilityName, str] = {
         "`/Applications/Blender.app/Contents/MacOS/Blender` (5.2.3 LTS)."
     ),
     "triposr": (
-        "Pinned TripoSR checkout missing. On MWT1 (AlanTBrain): "
-        "`mkdir -p /Volumes/AlanTBrain/composite3dgen/vendor && "
+        "Pinned TripoSR checkout missing. On MWT1 (AlanTBrain, via Terminal/FDA): "
+        "`mkdir -p /Volumes/AlanTBrain/Composite3DGen/tools && "
         "git clone https://github.com/VAST-AI-Research/TripoSR.git "
-        "/Volumes/AlanTBrain/composite3dgen/vendor/TripoSR && "
-        "cd /Volumes/AlanTBrain/composite3dgen/vendor/TripoSR && "
+        "/Volumes/AlanTBrain/Composite3DGen/tools/TripoSR && "
+        "cd /Volumes/AlanTBrain/Composite3DGen/tools/TripoSR && "
         "git checkout 107cefdc244c39106fa830359024f6a2f1c78871` "
-        "(see deploy/mwt1/README.md). Confirm `run.py` exists. Use MPS device."
+        "(see deploy/mwt1/README.md). Confirm `run.py` exists. Use --device mps."
     ),
     "colmap": (
         "COLMAP optional — install when orbit coverage needs local metric "

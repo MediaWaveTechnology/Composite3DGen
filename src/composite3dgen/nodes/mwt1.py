@@ -2,10 +2,14 @@
 
 Host (playbook): ``ssh mwt1`` → ``192.168.50.212``, user ``davethompson``.
 
-**Preferred storage (user decision):** ``/Volumes/AlanTBrain/composite3dgen/``
-for jobs, media, and heavy installs (home disk ~13 GiB free — too tight).
-Probe noted AlanTBrain listing may return Operation not permitted — mount
-and ACL must be fixed on node; path layout is still the contract default.
+**Preferred storage (live layout):** ``/Volumes/AlanTBrain/Composite3DGen/``
+(capitalized) for jobs, media, and tools — not the home volume (~13 GiB free).
+``~/composite3dgen/jobs`` is a **symlink** to the preferred jobs root.
+
+Cursor agent-worker lacks Full Disk Access on AlanTBrain (Operation not
+permitted for list/write); run storage I/O via Terminal.app (FDA) or grant FDA
+to the agent worker. See ``deploy/mwt1/README.md`` and store
+``internal/mwt1-alantbrain-layout.md``.
 
 **TripoSR GPU path (user decision):** try **PyTorch MPS / Metal** on Apple M4
 (experimental). CUDA is optional (Linux GPU hosts), not required on mwt1.
@@ -24,21 +28,23 @@ HOST_ALIAS = "mwt1"
 HOST_ADDRESS = "192.168.50.212"
 HOST_USER = "davethompson"
 
-# Preferred volume for jobs / media / heavy installs (user decision).
+# Preferred volume — live layout uses capitalized Composite3DGen (verified).
 ALANTBRAIN_VOLUME = "/Volumes/AlanTBrain"
-ALANTBRAIN_ROOT = f"{ALANTBRAIN_VOLUME}/composite3dgen"
+ALANTBRAIN_ROOT = f"{ALANTBRAIN_VOLUME}/Composite3DGen"
+# Legacy lowercase path — accept if present; do not create as primary.
+ALANTBRAIN_ROOT_LEGACY = f"{ALANTBRAIN_VOLUME}/composite3dgen"
 
-# Contract defaults — AlanTBrain when mounted. Home bootstrap from the live
-# probe (`~/composite3dgen/jobs`) is fallback only; do not use home for heavy data.
 DEFAULT_REMOTE_ROOT = ALANTBRAIN_ROOT
 DEFAULT_JOB_ROOT = f"{ALANTBRAIN_ROOT}/jobs"
 DEFAULT_MEDIA_ROOT = f"{ALANTBRAIN_ROOT}/media"
-DEFAULT_VENDOR_ROOT = f"{ALANTBRAIN_ROOT}/vendor"
-DEFAULT_TRIPOSR_DIR = f"{DEFAULT_VENDOR_ROOT}/TripoSR"
+DEFAULT_TOOLS_ROOT = f"{ALANTBRAIN_ROOT}/tools"
+DEFAULT_VENDOR_ROOT = DEFAULT_TOOLS_ROOT  # heavy installs live under tools/
+DEFAULT_TRIPOSR_DIR = f"{DEFAULT_TOOLS_ROOT}/TripoSR"
 DEFAULT_RUN_PY = f"{DEFAULT_TRIPOSR_DIR}/run.py"
 
-# Verified-writable bootstrap created during probe (home) — not the happy path.
-HOME_BOOTSTRAP_JOB_ROOT = "/Users/davethompson/composite3dgen/jobs"
+# Home convenience symlink → preferred jobs root (live; not a separate dir).
+HOME_JOBS_SYMLINK = "/Users/davethompson/composite3dgen/jobs"
+HOME_BOOTSTRAP_JOB_ROOT = HOME_JOBS_SYMLINK  # alias for older call sites
 
 # Upstream pin for VAST-AI-Research/TripoSR.
 TRIPOSR_PIN_COMMIT = "107cefdc244c39106fa830359024f6a2f1c78871"
@@ -166,6 +172,7 @@ class MWT1NodeContract:
     job_root: str = DEFAULT_JOB_ROOT
     remote_root: str = DEFAULT_REMOTE_ROOT
     media_root: str = DEFAULT_MEDIA_ROOT
+    tools_root: str = DEFAULT_TOOLS_ROOT
     vendor_root: str = DEFAULT_VENDOR_ROOT
     triposr_dir: str = DEFAULT_TRIPOSR_DIR
     triposr_pin: str = TRIPOSR_PIN_COMMIT
@@ -173,7 +180,9 @@ class MWT1NodeContract:
     triposr_weights: str = TRIPOSR_WEIGHTS
     triposr_device_policy: str = TRIPOSR_DEVICE_POLICY
     alantbrain_volume: str = ALANTBRAIN_VOLUME
+    home_jobs_symlink: str = HOME_JOBS_SYMLINK
     home_bootstrap_job_root: str = HOME_BOOTSTRAP_JOB_ROOT
+    legacy_alantbrain_root: str = ALANTBRAIN_ROOT_LEGACY
 
     def as_dict(self) -> dict:
         return {
@@ -183,6 +192,7 @@ class MWT1NodeContract:
             "job_root": self.job_root,
             "remote_root": self.remote_root,
             "media_root": self.media_root,
+            "tools_root": self.tools_root,
             "vendor_root": self.vendor_root,
             "triposr_dir": self.triposr_dir,
             "triposr_pin": self.triposr_pin,
@@ -190,11 +200,14 @@ class MWT1NodeContract:
             "triposr_weights": self.triposr_weights,
             "triposr_device_policy": self.triposr_device_policy,
             "alantbrain_volume": self.alantbrain_volume,
+            "home_jobs_symlink": self.home_jobs_symlink,
             "home_bootstrap_job_root": self.home_bootstrap_job_root,
+            "legacy_alantbrain_root": self.legacy_alantbrain_root,
             "blender_candidates": list(BLENDER_CANDIDATE_PATHS),
             "note": (
-                "Prefer /Volumes/AlanTBrain/composite3dgen for jobs/media/vendor. "
-                "TripoSR on mwt1 uses experimental PyTorch MPS (Metal); CUDA optional."
+                "Prefer /Volumes/AlanTBrain/Composite3DGen/{jobs,media,tools}. "
+                "Home ~/composite3dgen/jobs is a symlink. Agent-worker needs FDA "
+                "or Terminal for AlanTBrain I/O. TripoSR uses experimental MPS."
             ),
         }
 
@@ -206,15 +219,18 @@ def node_contract() -> MWT1NodeContract:
 
 __all__ = [
     "ALANTBRAIN_ROOT",
+    "ALANTBRAIN_ROOT_LEGACY",
     "ALANTBRAIN_VOLUME",
     "BLENDER_CANDIDATE_PATHS",
     "DEFAULT_JOB_ROOT",
     "DEFAULT_MEDIA_ROOT",
     "DEFAULT_REMOTE_ROOT",
     "DEFAULT_RUN_PY",
+    "DEFAULT_TOOLS_ROOT",
     "DEFAULT_TRIPOSR_DIR",
     "DEFAULT_VENDOR_ROOT",
     "HOME_BOOTSTRAP_JOB_ROOT",
+    "HOME_JOBS_SYMLINK",
     "HOST_ADDRESS",
     "HOST_ALIAS",
     "HOST_USER",

@@ -54,6 +54,11 @@ def _healthy_handlers() -> dict[str, tuple[int, str, str]]:
             "dir_ok\nrun_py_ok\nhead=107cefdc244c39106fa830359024f6a2f1c78871\n",
             "",
         ),
+        "tools/TripoSR": (
+            0,
+            "dir_ok\nrun_py_ok\nhead=107cefdc244c39106fa830359024f6a2f1c78871\n",
+            "",
+        ),
         "vendor/TripoSR": (
             0,
             "dir_ok\nrun_py_ok\nhead=107cefdc244c39106fa830359024f6a2f1c78871\n",
@@ -252,6 +257,8 @@ def test_node_contract_pin() -> None:
     assert contract.address == "192.168.50.212"
     assert contract.user == "davethompson"
     assert len(contract.triposr_pin) >= 7
-    assert contract.job_root.startswith("/Volumes/AlanTBrain/")
+    assert contract.job_root == "/Volumes/AlanTBrain/Composite3DGen/jobs"
+    assert "Composite3DGen" in contract.remote_root
+    assert contract.tools_root.endswith("/tools")
     assert "mps" in contract.triposr_device_policy
     assert mwt1_mod.remote_job_path("qm1", "job1").endswith("qm1/job1")

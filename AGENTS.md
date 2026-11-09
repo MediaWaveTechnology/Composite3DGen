@@ -30,7 +30,7 @@ Orchestration and secret resolution stay on the controller (laptop). MWT1 runs G
 ## MWT1
 
 - Host alias: `mwt1` → `192.168.50.212`, user `davethompson` (see `deploy/mwt1/README.md`).
-- **Storage:** prefer `/Volumes/AlanTBrain/composite3dgen/{jobs,media,vendor}` (home ~13 GiB free — too tight). AlanTBrain `ls` may be Operation not permitted until ACLs fixed; layout is still the default.
+- **Storage:** canonical `/Volumes/AlanTBrain/Composite3DGen/{jobs,media,tools}/` (**verified**); `~/composite3dgen/jobs` → symlink. Cursor agent-worker lacks FDA on AlanTBrain — use Terminal/FDA for writes. Lowercase `…/composite3dgen` is legacy only.
 - **Verified hardware:** Apple M4 / arm64 / **Metal** — **no CUDA**.
 - **Verified ready:** ffmpeg 9.0.2; Blender 5.2.3 LTS.
 - **Verified missing:** Pillow/numpy/torch, TripoSR checkout, COLMAP, Meshroom.

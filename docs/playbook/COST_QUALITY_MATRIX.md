@@ -52,7 +52,7 @@ capture OK?
 
 `composite3dgen doctor` probes SSH, job root, ffmpeg, Python image stack, CUDA/PyTorch, Blender, TripoSR pin, optional COLMAP/Meshroom. Executor selection prefers MWT1 only when **base** capabilities pass; TripoSR/Blender/photogrammetry stages additionally require their own caps (see WORKFLOW.md). Fail closed.
 
-**Verified host reality:** MWT1 is Apple M4 / Metal. TripoSR policy = try **experimental MPS**; CUDA is optional for Linux GPU nodes only. Stage stays fail-closed until MPS (or CUDA elsewhere) probes pass. Prefer `/Volumes/AlanTBrain/composite3dgen` for jobs/media. Blender 5.2.3 LTS + ffmpeg verified; install Pillow before quality/composites. Details: `deploy/mwt1/README.md`.
+**Verified host reality:** MWT1 is Apple M4 / Metal. TripoSR = **experimental MPS**; CUDA optional for Linux GPU only. Prefer `/Volumes/AlanTBrain/Composite3DGen` for jobs/media/tools (agent-worker needs FDA/Terminal). Blender 5.2.3 LTS + ffmpeg verified; install Pillow before quality/composites. Details: `deploy/mwt1/README.md`.
 
 ## Related
 

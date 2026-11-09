@@ -63,7 +63,7 @@ Approximate cloud reference (order-of-magnitude; verify live pricing):
 
 Missing **required** capabilities fail closed with remediation text. Optional COLMAP/Meshroom absence does not block base packs.
 
-**Live MWT1 (verified):** Apple **M4 / Metal**. Jobs/media/vendor → `/Volumes/AlanTBrain/composite3dgen/` (home too small). TripoSR path = **experimental PyTorch MPS** (CUDA not on this host). ffmpeg + Blender 5.2.3 LTS ready; Pillow/torch/TripoSR/COLMAP **missing**. See `deploy/mwt1/README.md`.
+**Live MWT1 (verified):** Apple **M4 / Metal**. Jobs/media/tools → `/Volumes/AlanTBrain/Composite3DGen/` (capitalized; home too small; agent needs FDA/Terminal for volume I/O). TripoSR = **experimental MPS**. ffmpeg + Blender 5.2.3 LTS ready; Pillow/torch/TripoSR/COLMAP **missing**. See `deploy/mwt1/README.md`.
 
 ## Job directory pattern (planned)
 
