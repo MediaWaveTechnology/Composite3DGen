@@ -30,10 +30,12 @@ def _healthy_handlers() -> dict[str, tuple[int, str, str]]:
         {
             "torch": True,
             "cuda": True,
+            "mps": False,
             "vram_gb": 8.0,
             "torch_version": "2.2.0",
             "error": None,
             "device_name": "Mock GPU",
+            "backend": "cuda",
         }
     )
     return {
@@ -147,10 +149,12 @@ def test_cuda_vram_below_threshold_blocks_triposr(tmp_path: Path) -> None:
         {
             "torch": True,
             "cuda": True,
+            "mps": False,
             "vram_gb": 4.0,
             "torch_version": "2.2.0",
             "error": None,
             "device_name": "Small GPU",
+            "backend": "cuda",
         }
     )
     handlers["import torch"] = (0, low + "\n", "")
@@ -162,6 +166,30 @@ def test_cuda_vram_below_threshold_blocks_triposr(tmp_path: Path) -> None:
     assert report.stages["triposr"] == "blocked"
     with pytest.raises(CapabilityError):
         report.require_stage("triposr")
+
+
+def test_mps_without_cuda_allows_gpu_capability(tmp_path: Path) -> None:
+    handlers = _healthy_handlers()
+    mps = json.dumps(
+        {
+            "torch": True,
+            "cuda": False,
+            "mps": True,
+            "vram_gb": None,
+            "torch_version": "2.4.0",
+            "error": None,
+            "device_name": "Apple Metal/MPS",
+            "backend": "mps",
+        }
+    )
+    handlers["import torch"] = (0, mps + "\n", "")
+    handlers["vram_gb"] = (0, mps + "\n", "")
+    transport = ScriptedTransport(root=tmp_path, run_handlers=handlers)
+    report = HealthChecker(transport=transport).probe_all()
+    assert report.capabilities["cuda_pytorch"].ok is True
+    assert report.capabilities["cuda_pytorch"].meta.get("mps_available") is True
+    assert report.capabilities["cuda_pytorch"].meta.get("experimental_mps") is True
+    assert report.stages["triposr"] == "ready"
 
 
 def test_capability_matrix_fixture_and_executor() -> None:
@@ -224,4 +252,6 @@ def test_node_contract_pin() -> None:
     assert contract.address == "192.168.50.212"
     assert contract.user == "davethompson"
     assert len(contract.triposr_pin) >= 7
+    assert contract.job_root.startswith("/Volumes/AlanTBrain/")
+    assert "mps" in contract.triposr_device_policy
     assert mwt1_mod.remote_job_path("qm1", "job1").endswith("qm1/job1")

@@ -2,10 +2,14 @@
 # Jobs are driven over SSH from the controller — this is not a long-running daemon.
 # Never embed API keys or Hugging Face tokens here.
 #
+# NOTE: MWT1 is Apple M4 / Metal — use PyTorch MPS (experimental), not CUDA.
+# Put checkout + weights on AlanTBrain (home ~13 GiB free is too tight).
+# Do not enable until: volume writable, pin checked out, MPS smoke passes.
+#
 #   ~/.config/systemd/user/composite3dgen-triposr.service
 #
-# Adjust paths after LAN verify. Pin:
-#   107cefdc244c39106fa830359024f6a2f1c78871
+# Pin: 107cefdc244c39106fa830359024f6a2f1c78871
+# Root: /Volumes/AlanTBrain/composite3dgen
 
 [Unit]
 Description=Composite3DGen TripoSR env smoke (example oneshot)
@@ -13,11 +17,12 @@ After=default.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=%h/composite3dgen/vendor/TripoSR
-# Prefer the venv created during install (verify on LAN):
-ExecStart=%h/composite3dgen/vendor/TripoSR/.venv/bin/python run.py --help
-# Real reconstruct:
-#   python run.py /path/to/input.png --output-dir /path/to/out --model-save-format glb
+WorkingDirectory=/Volumes/AlanTBrain/composite3dgen/vendor/TripoSR
+Environment=PATH=/Volumes/AlanTBrain/composite3dgen/.venv/bin:/opt/homebrew/bin:/usr/bin
+ExecStart=/Volumes/AlanTBrain/composite3dgen/.venv/bin/python run.py --help
+# Real reconstruct (MPS):
+#   python run.py /path/to/input.png --output-dir /path/to/out \
+#     --model-save-format glb --device mps
 
 [Install]
 WantedBy=default.target

@@ -41,6 +41,8 @@ class TripoSRAdapter:
     remote_root: str = DEFAULT_REMOTE_ROOT
     run_py: str = DEFAULT_RUN_PY
     pin_commit: str = TRIPOSR_PIN_COMMIT
+    # mwt1 default: experimental Metal/MPS. Override to cuda:0 on Linux GPU hosts.
+    device: str = "mps"
     _jobs: dict[str, ProviderJobResult] = field(default_factory=dict, repr=False)
 
     def _transport(self) -> RemoteFSTransport:
@@ -118,10 +120,12 @@ class TripoSRAdapter:
         fs.upload(Path(image), remote_input)
 
         # Upstream run.py writes {output_dir}/{i}/mesh.{obj|glb}. Prefer glb.
+        # device=mps on Apple M4 (experimental); use cuda:0 on Linux CUDA hosts.
         cmd = (
             f"cd {self.remote_root}/vendor/TripoSR && "
             f"python {self.run_py} {remote_input} "
-            f"--output-dir {remote_out} --model-save-format glb"
+            f"--output-dir {remote_out} --model-save-format glb "
+            f"--device {self.device}"
         )
         code, stdout, stderr = fs.run(cmd)
         if code != 0:

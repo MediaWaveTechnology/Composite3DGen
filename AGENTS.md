@@ -30,9 +30,11 @@ Orchestration and secret resolution stay on the controller (laptop). MWT1 runs G
 ## MWT1
 
 - Host alias: `mwt1` → `192.168.50.212`, user `davethompson` (see `deploy/mwt1/README.md`).
-- Job root: `~/composite3dgen/jobs/`
-- Capabilities: SSH, writable jobs dir, ffmpeg, Python image stack, CUDA/PyTorch (~6GB+ for TripoSR), Blender, optional COLMAP/Meshroom — probed by `composite3dgen doctor` (injectable transport; `--live` for SSH).
-- Live Blender/CUDA/COLMAP paths are **verify on LAN** until recorded from a LAN controller or the mwt1 self-hosted worker probe file. Cloud agents cannot reach the private LAN.
+- **Storage:** prefer `/Volumes/AlanTBrain/composite3dgen/{jobs,media,vendor}` (home ~13 GiB free — too tight). AlanTBrain `ls` may be Operation not permitted until ACLs fixed; layout is still the default.
+- **Verified hardware:** Apple M4 / arm64 / **Metal** — **no CUDA**.
+- **Verified ready:** ffmpeg 9.0.2; Blender 5.2.3 LTS.
+- **Verified missing:** Pillow/numpy/torch, TripoSR checkout, COLMAP, Meshroom.
+- **TripoSR:** try **PyTorch MPS** (experimental) on mwt1; CUDA optional on Linux GPU hosts only. Probes fail closed if MPS (and CUDA) unavailable.
 
 If MWT1 is unreachable, controller may run lightweight stages in **degraded mode** — fallback, not the happy path.
 

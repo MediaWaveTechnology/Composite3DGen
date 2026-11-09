@@ -1,12 +1,14 @@
 """MWT1 node contract: SSH host facts, job staging, health probe wiring.
 
 Host (playbook): ``ssh mwt1`` → ``192.168.50.212``, user ``davethompson``.
-Job root: ``~/composite3dgen/jobs/``.
 
-Live capability paths (Blender, CUDA device, COLMAP) must be verified on the
-LAN or via the mwt1 self-hosted worker — cloud VMs cannot reach the private
-LAN. See ``deploy/mwt1/README.md`` and
-``internal/mwt1-capability-probe.md`` (store) for verified facts when present.
+**Preferred storage (user decision):** ``/Volumes/AlanTBrain/composite3dgen/``
+for jobs, media, and heavy installs (home disk ~13 GiB free — too tight).
+Probe noted AlanTBrain listing may return Operation not permitted — mount
+and ACL must be fixed on node; path layout is still the contract default.
+
+**TripoSR GPU path (user decision):** try **PyTorch MPS / Metal** on Apple M4
+(experimental). CUDA is optional (Linux GPU hosts), not required on mwt1.
 """
 
 from __future__ import annotations
@@ -16,29 +18,44 @@ from typing import Callable
 
 from composite3dgen.nodes.capabilities import CapabilityError, StageName
 
-# --- Host facts (expected; live paths marked verify-on-LAN until probed) ---
+# --- Host facts ---
 
 HOST_ALIAS = "mwt1"
 HOST_ADDRESS = "192.168.50.212"
 HOST_USER = "davethompson"
-DEFAULT_JOB_ROOT = "~/composite3dgen/jobs"
-DEFAULT_REMOTE_ROOT = "~/composite3dgen"
-DEFAULT_TRIPOSR_DIR = "~/composite3dgen/vendor/TripoSR"
+
+# Preferred volume for jobs / media / heavy installs (user decision).
+ALANTBRAIN_VOLUME = "/Volumes/AlanTBrain"
+ALANTBRAIN_ROOT = f"{ALANTBRAIN_VOLUME}/composite3dgen"
+
+# Contract defaults — AlanTBrain when mounted. Home bootstrap from the live
+# probe (`~/composite3dgen/jobs`) is fallback only; do not use home for heavy data.
+DEFAULT_REMOTE_ROOT = ALANTBRAIN_ROOT
+DEFAULT_JOB_ROOT = f"{ALANTBRAIN_ROOT}/jobs"
+DEFAULT_MEDIA_ROOT = f"{ALANTBRAIN_ROOT}/media"
+DEFAULT_VENDOR_ROOT = f"{ALANTBRAIN_ROOT}/vendor"
+DEFAULT_TRIPOSR_DIR = f"{DEFAULT_VENDOR_ROOT}/TripoSR"
 DEFAULT_RUN_PY = f"{DEFAULT_TRIPOSR_DIR}/run.py"
 
-# Upstream pin for VAST-AI-Research/TripoSR (main as of U3b docs).
-# Checkout on MWT1 still needs LAN verification — see deploy/mwt1/README.md.
+# Verified-writable bootstrap created during probe (home) — not the happy path.
+HOME_BOOTSTRAP_JOB_ROOT = "/Users/davethompson/composite3dgen/jobs"
+
+# Upstream pin for VAST-AI-Research/TripoSR.
 TRIPOSR_PIN_COMMIT = "107cefdc244c39106fa830359024f6a2f1c78871"
 TRIPOSR_REPO_URL = "https://github.com/VAST-AI-Research/TripoSR.git"
 TRIPOSR_WEIGHTS = "stabilityai/TripoSR"
+# mwt1: Metal/MPS experimental; CUDA optional on Linux GPU nodes only.
+TRIPOSR_DEVICE_POLICY = "mps_preferred_on_mwt1"
 
-# Candidate Blender locations to *search* during probes — never treat as verified.
+# Candidate Blender locations to *search* during probes.
+# Verified on MWT1: Homebrew PATH + app bundle.
 BLENDER_CANDIDATE_PATHS: tuple[str, ...] = (
+    "/opt/homebrew/bin/blender",
+    "/Applications/Blender.app/Contents/MacOS/Blender",
     "/usr/bin/blender",
     "/usr/local/bin/blender",
     "/snap/bin/blender",
     "~/blender/blender",
-    "/Applications/Blender.app/Contents/MacOS/Blender",
 )
 
 HealthProbe = Callable[[], bool]
@@ -63,12 +80,12 @@ def host_user() -> str:
 
 
 def job_root() -> str:
-    """Remote job staging directory on MWT1."""
+    """Remote job staging directory on MWT1 (AlanTBrain preferred)."""
     return DEFAULT_JOB_ROOT
 
 
 def remote_job_path(subject_id: str, job_id: str | None = None) -> str:
-    """Build ``~/composite3dgen/jobs/<subject>[/<job_id>]`` remote path."""
+    """Build ``…/composite3dgen/jobs/<subject>[/<job_id>]`` remote path."""
     base = f"{DEFAULT_JOB_ROOT.rstrip('/')}/{subject_id}"
     if job_id:
         return f"{base}/{job_id}"
@@ -93,18 +110,12 @@ def get_default_transport() -> object | None:
 
 
 def default_health_probe() -> bool:
-    """Probe MWT1 base capabilities via injected or live-SSH transport.
-
-    - If a custom probe was set via :func:`set_health_probe`, that wins.
-    - Else if a default transport is installed, run health against it.
-    - Else attempt live SSH once (may fail from cloud — returns False).
-    """
+    """Probe MWT1 base capabilities via injected or live-SSH transport."""
     from composite3dgen.nodes.health import run_health_check
 
     if _DEFAULT_TRANSPORT is not None:
         report = run_health_check(transport=_DEFAULT_TRANSPORT)  # type: ignore[arg-type]
         return report.ok
-    # Live attempt — fail closed when unreachable (typical from cloud VMs).
     report = run_health_check(use_live_ssh=True)
     return report.ok
 
@@ -117,7 +128,6 @@ def is_healthy(probe: HealthProbe | None = None) -> bool:
     """
     active = probe if probe is not None else _DEFAULT_PROBE
     if active is None:
-        # No explicit probe: try default transport / live SSH, else unhealthy.
         if _DEFAULT_TRANSPORT is not None:
             active = default_health_probe
         else:
@@ -155,10 +165,15 @@ class MWT1NodeContract:
     user: str = HOST_USER
     job_root: str = DEFAULT_JOB_ROOT
     remote_root: str = DEFAULT_REMOTE_ROOT
+    media_root: str = DEFAULT_MEDIA_ROOT
+    vendor_root: str = DEFAULT_VENDOR_ROOT
     triposr_dir: str = DEFAULT_TRIPOSR_DIR
     triposr_pin: str = TRIPOSR_PIN_COMMIT
     triposr_repo: str = TRIPOSR_REPO_URL
     triposr_weights: str = TRIPOSR_WEIGHTS
+    triposr_device_policy: str = TRIPOSR_DEVICE_POLICY
+    alantbrain_volume: str = ALANTBRAIN_VOLUME
+    home_bootstrap_job_root: str = HOME_BOOTSTRAP_JOB_ROOT
 
     def as_dict(self) -> dict:
         return {
@@ -167,14 +182,19 @@ class MWT1NodeContract:
             "user": self.user,
             "job_root": self.job_root,
             "remote_root": self.remote_root,
+            "media_root": self.media_root,
+            "vendor_root": self.vendor_root,
             "triposr_dir": self.triposr_dir,
             "triposr_pin": self.triposr_pin,
             "triposr_repo": self.triposr_repo,
             "triposr_weights": self.triposr_weights,
+            "triposr_device_policy": self.triposr_device_policy,
+            "alantbrain_volume": self.alantbrain_volume,
+            "home_bootstrap_job_root": self.home_bootstrap_job_root,
             "blender_candidates": list(BLENDER_CANDIDATE_PATHS),
             "note": (
-                "Live blender/cuda/colmap paths are verify-on-LAN until "
-                "recorded from mwt1-capability-probe.md or doctor --live."
+                "Prefer /Volumes/AlanTBrain/composite3dgen for jobs/media/vendor. "
+                "TripoSR on mwt1 uses experimental PyTorch MPS (Metal); CUDA optional."
             ),
         }
 
@@ -185,16 +205,22 @@ def node_contract() -> MWT1NodeContract:
 
 
 __all__ = [
+    "ALANTBRAIN_ROOT",
+    "ALANTBRAIN_VOLUME",
     "BLENDER_CANDIDATE_PATHS",
     "DEFAULT_JOB_ROOT",
+    "DEFAULT_MEDIA_ROOT",
     "DEFAULT_REMOTE_ROOT",
     "DEFAULT_RUN_PY",
     "DEFAULT_TRIPOSR_DIR",
+    "DEFAULT_VENDOR_ROOT",
+    "HOME_BOOTSTRAP_JOB_ROOT",
     "HOST_ADDRESS",
     "HOST_ALIAS",
     "HOST_USER",
     "HealthProbe",
     "MWT1NodeContract",
+    "TRIPOSR_DEVICE_POLICY",
     "TRIPOSR_PIN_COMMIT",
     "TRIPOSR_REPO_URL",
     "TRIPOSR_WEIGHTS",

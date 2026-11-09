@@ -55,13 +55,15 @@ Approximate cloud reference (order-of-magnitude; verify live pricing):
 
 | Stage | Requires on MWT1 |
 |-------|------------------|
-| Ingest / ffmpeg | SSH, writable `~/composite3dgen/jobs/`, `ffmpeg` |
+| Ingest / ffmpeg | SSH, writable jobs dir (prefer AlanTBrain), `ffmpeg` |
 | Quality / composites / packs | SSH, writable jobs dir, Python Pillow image stack |
-| TripoSR | SSH, jobs dir, CUDA/PyTorch (~6GB+ VRAM), pinned TripoSR + `run.py` |
+| TripoSR | SSH, jobs dir, **MPS (mwt1)** or CUDA (optional Linux), pinned TripoSR + `run.py` |
 | Photogrammetry (U6) | SSH, jobs dir, **and** `colmap` **or** Meshroom |
 | Blender explode / QA stills (U4) | SSH, jobs dir, `blender` (+ Pillow for silhouette scoring) |
 
-Missing **required** capabilities fail closed with remediation text. Optional COLMAP/Meshroom absence does not block base packs. Cloud VMs cannot reach `192.168.50.212` — live paths stay `<verify on LAN>` until probed from LAN/mwt1 worker.
+Missing **required** capabilities fail closed with remediation text. Optional COLMAP/Meshroom absence does not block base packs.
+
+**Live MWT1 (verified):** Apple **M4 / Metal**. Jobs/media/vendor → `/Volumes/AlanTBrain/composite3dgen/` (home too small). TripoSR path = **experimental PyTorch MPS** (CUDA not on this host). ffmpeg + Blender 5.2.3 LTS ready; Pillow/torch/TripoSR/COLMAP **missing**. See `deploy/mwt1/README.md`.
 
 ## Job directory pattern (planned)
 

@@ -345,21 +345,29 @@ class HealthChecker:
         )
 
     def _probe_cuda_pytorch(self) -> CapabilityResult:
-        # Compact one-liner safe for ssh remote command.
+        """Probe GPU PyTorch: MPS (mwt1 Metal, experimental) or CUDA (optional Linux).
+
+        Capability name stays ``cuda_pytorch`` for schema stability; readiness is
+        MPS **or** CUDA+VRAM. Fail closed with remediation when neither works.
+        """
         cmd = (
             "python3 -c "
             "\"import json;"
-            "info={'torch':False,'cuda':False,'vram_gb':None,'torch_version':None,"
-            "'error':None,'device_name':None};"
+            "info={'torch':False,'cuda':False,'mps':False,'vram_gb':None,"
+            "'torch_version':None,'error':None,'device_name':None,'backend':None};"
             "try:"
             " import torch;"
             " info['torch']=True;"
             " info['torch_version']=str(torch.__version__);"
             " info['cuda']=bool(torch.cuda.is_available());"
+            " info['mps']=bool(getattr(torch.backends,'mps',None) and "
+            "torch.backends.mps.is_available());"
             " info.update("
             "{'vram_gb': round(torch.cuda.get_device_properties(0).total_memory/(1024**3),2),"
-            " 'device_name': torch.cuda.get_device_properties(0).name}"
-            " if info['cuda'] else {});"
+            " 'device_name': torch.cuda.get_device_properties(0).name,"
+            " 'backend':'cuda'}"
+            " if info['cuda'] else "
+            "({'device_name':'Apple Metal/MPS','backend':'mps'} if info['mps'] else {}));"
             "except Exception as e:"
             " info['error']=str(e);"
             "print(json.dumps(info))\""
@@ -379,32 +387,46 @@ class HealthChecker:
             info = {"error": err.strip() or out.strip() or f"exit {code}"}
 
         vram = info.get("vram_gb")
+        mps_ok = bool(info.get("torch")) and bool(info.get("mps"))
         cuda_ok = bool(info.get("torch")) and bool(info.get("cuda"))
         vram_ok = isinstance(vram, (int, float)) and float(vram) >= self.min_vram_gb
-        ok = cuda_ok and vram_ok
+        # mwt1 policy: MPS sufficient (experimental). CUDA+VRAM remains valid
+        # on Linux GPU hosts. Neither → fail closed.
+        ok = mps_ok or (cuda_ok and vram_ok)
         detail_parts: list[str] = []
         if info.get("torch_version"):
             detail_parts.append(f"torch={info['torch_version']}")
+        if info.get("backend"):
+            detail_parts.append(f"backend={info['backend']}")
         if info.get("device_name"):
             detail_parts.append(f"device={info['device_name']}")
         if vram is not None:
             detail_parts.append(f"vram_gb={vram}")
+        if mps_ok:
+            detail_parts.append("mps_experimental=true")
         if info.get("error"):
             detail_parts.append(f"error={info['error']}")
-        if cuda_ok and not vram_ok:
-            detail_parts.append(f"need>={self.min_vram_gb}GB for TripoSR")
+        if cuda_ok and not vram_ok and not mps_ok:
+            detail_parts.append(f"cuda_vram_need>={self.min_vram_gb}GB")
+        if bool(info.get("torch")) and not ok:
+            detail_parts.append("need_mps_or_cuda")
         return CapabilityResult(
             name="cuda_pytorch",
             ok=ok,
             required=False,
-            detail="; ".join(detail_parts) or "cuda/pytorch unavailable",
+            detail="; ".join(detail_parts) or "pytorch GPU backend unavailable",
             remediation=None if ok else remediation_for("cuda_pytorch"),
             meta={
                 "cuda_available": bool(info.get("cuda")),
+                "mps_available": bool(info.get("mps")),
+                "backend": info.get("backend"),
                 "vram_gb": vram,
                 "torch_version": info.get("torch_version"),
                 "device_name": info.get("device_name"),
-                "cuda_device": info.get("device_name") or f"<{VERIFY_ON_LAN}>",
+                "cuda_device": info.get("device_name")
+                if info.get("cuda")
+                else f"<{VERIFY_ON_LAN}>",
+                "experimental_mps": bool(mps_ok),
             },
         )
 
