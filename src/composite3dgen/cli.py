@@ -2,7 +2,7 @@
 
 Paid cloud providers stay behind an explicit ``--spend`` gate.
 Local/MWT1 stages are preferred by default (``prefer_local`` / MWT1).
-U2 wires ``build-packs`` and dry-run ``run`` for ingest→packs only.
+U3 wires provider dry-run / routed reconstruct after U2 packs.
 """
 
 from __future__ import annotations
@@ -37,7 +37,8 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Authorize paid cloud provider calls (Tripo / Hi3D / Rodin / "
             "Seedance). Without this flag, only dry-run and local/MWT1 "
-            "stages run. Requires QA miss reasons once QA gates land (U7)."
+            "stages run. Live cloud still needs QA miss reasons when "
+            "prefer_local is on (full ledger in U7)."
         ),
     )
     parser.add_argument(
@@ -55,7 +56,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser(
         "run",
-        help="Run job stages (U2: local ingest→packs when job_dir given)",
+        help="Run job stages: U2 packs + U3 routed provider jobs (dry-run default)",
     )
     run.add_argument(
         "job_dir",
@@ -74,6 +75,42 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("auto", "mwt1", "local"),
         default="auto",
         help="Force executor selection (default: auto — MWT1 if healthy)",
+    )
+    run.add_argument(
+        "--skip-packs",
+        action="store_true",
+        help="Skip U2 ingest→packs (use existing build_packs/)",
+    )
+    run.add_argument(
+        "--providers-only",
+        action="store_true",
+        help="Alias for --skip-packs: only run the U3 router + adapters",
+    )
+    run.add_argument(
+        "--qa-miss",
+        action="append",
+        default=[],
+        metavar="KIND",
+        help=(
+            "Record a QA miss kind justifying cloud promote "
+            "(angle_coverage|part_fidelity|hard_surface|texture|"
+            "silhouette|bom_completeness|operator_override). Repeatable."
+        ),
+    )
+    run.add_argument(
+        "--stage",
+        action="append",
+        default=[],
+        metavar="STAGE",
+        help=(
+            "Explicit route stage(s): triposr|photogrammetry|tripo|hi3d|"
+            "rodin_bang|rodin_gen25|seedance. Default: policy ladder."
+        ),
+    )
+    run.add_argument(
+        "--json",
+        action="store_true",
+        help="Print machine-readable summary JSON",
     )
 
     build_packs = sub.add_parser(
@@ -103,6 +140,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Print machine-readable summary JSON",
     )
 
+    route = sub.add_parser(
+        "route",
+        help="Print cost/quality route plan without executing adapters",
+    )
+    route.add_argument(
+        "--qa-miss",
+        action="append",
+        default=[],
+        metavar="KIND",
+        help="QA miss kind(s); see `run --qa-miss`",
+    )
+    route.add_argument(
+        "--stage",
+        action="append",
+        default=[],
+        metavar="STAGE",
+        help="Explicit stage(s); default policy ladder",
+    )
+
     sub.add_parser(
         "doctor",
         help="Probe local/MWT1 capabilities (stub surface — full probes in U3b)",
@@ -117,7 +173,29 @@ def _force_from_args(executor: str) -> str | None:
     return executor
 
 
-def _run_build_packs(args: argparse.Namespace) -> int:
+def _parse_qa_misses(kinds: Sequence[str]):
+    from composite3dgen.qa.miss import QAMiss
+
+    allowed = {
+        "angle_coverage",
+        "part_fidelity",
+        "hard_surface",
+        "texture",
+        "silhouette",
+        "bom_completeness",
+        "operator_override",
+    }
+    misses = []
+    for kind in kinds:
+        if kind not in allowed:
+            raise ValueError(
+                f"Unknown QA miss kind '{kind}'. Expected one of: {sorted(allowed)}"
+            )
+        misses.append(QAMiss(kind=kind))  # type: ignore[arg-type]
+    return misses
+
+
+def _run_build_packs(args: argparse.Namespace) -> tuple[int, dict | None]:
     from composite3dgen.composites.select import MissingFrontError
     from composite3dgen.manifest import ManifestError
     from composite3dgen.packs.builder import MissingFrontPackError
@@ -134,12 +212,13 @@ def _run_build_packs(args: argparse.Namespace) -> int:
         )
     except (ManifestError, MissingFrontError, MissingFrontPackError, FileNotFoundError) as exc:
         print(f"composite3dgen: error: {exc}", file=sys.stderr)
-        return 1
+        return 1, None
 
     summary = result.summary()
-    if getattr(args, "json", False):
+    is_build_cmd = getattr(args, "command", None) == "build-packs"
+    if is_build_cmd and getattr(args, "json", False):
         print(json.dumps(summary, indent=2))
-    else:
+    elif is_build_cmd or not getattr(args, "json", False):
         print(
             f"build-packs ok: subject={result.manifest.subject_id} "
             f"executor={result.executor.name} "
@@ -149,11 +228,123 @@ def _run_build_packs(args: argparse.Namespace) -> int:
         print(f"  packs: {result.packs.packs_root}")
         print(f"  quality: {result.frame_quality_path}")
         print(f"  reason: {result.executor.reason}")
-    if args.spend:
+    if args.spend and is_build_cmd:
         print(
             "note: --spend ignored for build-packs (local stage only; no cloud).",
             file=sys.stderr,
         )
+    return 0, summary
+
+
+def _run_providers(args: argparse.Namespace, *, subject_id: str | None = None) -> int:
+    from composite3dgen.providers.router import plan_routes
+    from composite3dgen.providers.runner import collect_pack_inputs, run_plan
+
+    try:
+        misses = _parse_qa_misses(args.qa_miss or [])
+    except ValueError as exc:
+        print(f"composite3dgen: error: {exc}", file=sys.stderr)
+        return 1
+
+    stages = list(args.stage) if args.stage else None
+    # Without --spend, cloud stages are dry-run; with --spend but prefer_local
+    # and no misses, router keeps dry-run + block_reason (no live HTTP).
+    plan = plan_routes(
+        prefer_local=bool(args.prefer_local),
+        spend=bool(args.spend),
+        qa_misses=misses,
+        stages=stages,  # type: ignore[arg-type]
+    )
+
+    job_dir = Path(args.job_dir)
+    inputs = collect_pack_inputs(job_dir, "triposr")
+
+    # Controller is offline-safe: without an injected MWT1 RemoteFSTransport
+    # (U3b), virtualize TripoSR as dry-run so `run` never opens live SSH.
+    from composite3dgen.providers.router import RouteDecision
+
+    safe_plan_decisions = []
+    for d in plan.decisions:
+        if d.stage == "triposr" and d.mode == "local":
+            safe_plan_decisions.append(
+                RouteDecision(
+                    stage=d.stage,
+                    provider=d.provider,
+                    mode="dry-run",
+                    allowed=d.allowed,
+                    block_reason=(
+                        "TripoSR local/MWT1 transport not injected on controller; "
+                        "recording virtual job. U3b wires SubprocessSSHTransport "
+                        "after capability probes."
+                    ),
+                    estimated_cost=0.0,
+                    prefer_local=d.prefer_local,
+                    spend=d.spend,
+                    qa_misses=d.qa_misses,
+                    notes=tuple(
+                        [
+                            *d.notes,
+                            "Controller dry-run: TripoSR virtualized "
+                            "(inject RemoteFSTransport for live MWT1).",
+                        ]
+                    ),
+                )
+            )
+        else:
+            safe_plan_decisions.append(d)
+    plan.decisions = safe_plan_decisions
+
+    # Hard spend gate: live paid mode must never run without --spend.
+    live_attempts = [
+        d for d in plan.decisions if d.mode == "live" and d.provider in ("tripo", "hi3d", "rodin", "seedance")
+    ]
+    if live_attempts and not args.spend:
+        print(
+            "composite3dgen: error: live paid providers require --spend "
+            "(secrets via env/Bitwarden only).",
+            file=sys.stderr,
+        )
+        return 2
+
+    result = run_plan(plan, job_dir, subject_id=subject_id, inputs=inputs)
+    summary = result.summary()
+    if args.json:
+        print(json.dumps(summary, indent=2))
+    else:
+        mode = "spend" if args.spend else "dry-run"
+        print(
+            f"providers ok: mode={mode} prefer_local={args.prefer_local} "
+            f"jobs={len(result.results)}"
+        )
+        for job in result.results:
+            print(
+                f"  - {job.provider} {job.job_id} status={job.status.value} "
+                f"mode={job.mode} consumed={job.consumed}"
+            )
+        if result.ledger_path:
+            print(f"  ledger: {result.ledger_path}")
+        blocked = [d for d in plan.decisions if d.block_reason]
+        for d in blocked:
+            print(f"  router note ({d.stage}): {d.block_reason}", file=sys.stderr)
+    return 0
+
+
+def _cmd_route(args: argparse.Namespace) -> int:
+    from composite3dgen.providers.router import plan_routes
+
+    try:
+        misses = _parse_qa_misses(args.qa_miss or [])
+    except ValueError as exc:
+        print(f"composite3dgen: error: {exc}", file=sys.stderr)
+        return 1
+    stages = list(args.stage) if args.stage else None
+    plan = plan_routes(
+        prefer_local=bool(args.prefer_local),
+        spend=bool(args.spend),
+        qa_misses=misses,
+        stages=stages,  # type: ignore[arg-type]
+    )
+    print(json.dumps(plan.as_dict(), indent=2))
     return 0
 
 
@@ -166,42 +357,49 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     if args.command == "build-packs":
-        return _run_build_packs(args)
+        code, _ = _run_build_packs(args)
+        return code
+
+    if args.command == "route":
+        return _cmd_route(args)
 
     if args.command == "run":
-        if args.job_dir:
-            # U2: dry-run / local-only path runs ingest→packs.
-            ns = argparse.Namespace(
-                job_dir=args.job_dir,
-                manifest=args.manifest,
-                executor=args.executor,
-                prefer_local=args.prefer_local,
-                spend=args.spend,
-                json=False,
+        if not args.job_dir:
+            mode = "spend" if args.spend else "dry-run / local-only"
+            prefer = "prefer_local" if args.prefer_local else "no-prefer-local"
+            print(
+                f"composite3dgen run: no job_dir ({mode}, {prefer}). "
+                "Pass a job directory to run packs + routed providers.",
+                file=sys.stderr,
             )
-            code = _run_build_packs(ns)
-            if code == 0 and not args.spend:
-                print(
-                    "run: U2 local stages complete (ingest→packs). "
-                    "Provider reconstruct / Blender / QA land in U3–U7.",
-                    file=sys.stderr,
-                )
-            elif code == 0 and args.spend:
-                print(
-                    "run: U2 local packs ready; paid providers not invoked yet "
-                    "(U3 adapters + spend gate).",
-                    file=sys.stderr,
-                )
-            return code
+            return 0
 
-        mode = "spend" if args.spend else "dry-run / local-only"
-        prefer = "prefer_local" if args.prefer_local else "no-prefer-local"
-        print(
-            f"composite3dgen run: no job_dir ({mode}, {prefer}). "
-            "Pass a job directory to run U2 ingest→packs.",
-            file=sys.stderr,
-        )
-        return 0
+        skip_packs = bool(args.skip_packs or args.providers_only)
+        subject_id = None
+        if not skip_packs:
+            code, summary = _run_build_packs(args)
+            if code != 0:
+                return code
+            if summary:
+                subject_id = summary.get("subject_id")
+                if not args.json:
+                    print(
+                        f"run: packs ready (subject={subject_id}). "
+                        "Routing providers…",
+                        file=sys.stderr,
+                    )
+        else:
+            # Best-effort subject id from manifest
+            try:
+                from composite3dgen.pipeline import resolve_manifest
+
+                subject_id = resolve_manifest(
+                    Path(args.job_dir), args.manifest
+                ).subject_id
+            except Exception:  # noqa: BLE001
+                subject_id = None
+
+        return _run_providers(args, subject_id=subject_id)
 
     if args.command == "doctor":
         from composite3dgen.nodes.capabilities import probe_stub
@@ -215,7 +413,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "prefer_mwt1": selection.prefer_mwt1,
         }}, indent=2))
         print(
-            "composite3dgen doctor: U2 selection hook only; "
+            "composite3dgen doctor: selection hook only; "
             "full MWT1 capability probes land in U3b.",
             file=sys.stderr,
         )

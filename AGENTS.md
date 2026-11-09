@@ -40,17 +40,18 @@ If MWT1 is unreachable, controller may run lightweight stages in **degraded mode
 | Unit | Scope |
 |------|--------|
 | U1 | Repo bootstrap + playbook + CLI stub |
-| U2 | Subject manifest + composite pack builder (this milestone) |
-| U3 | Provider adapters + cost router |
+| U2 | Subject manifest + composite pack builder |
+| U3 | Provider adapters + cost router (this milestone) |
 | U3b | MWT1 node contract + health checks |
 | U4 | BOM schema + Blender explode/QA on MWT1 |
 | U5 | GLM fixture intake + dry-run E2E |
 | U6 | RC CAD + photogrammetry on MWT1 |
 | U7 | QA gates + cost ledger |
 
-U2 implements `manifest/`, `ingest/`, `composites/`, `packs/`, and the nodes
-executor selection interface. Do not invent fake cloud provider clients until U3.
-Full MWT1 SSH capability probes remain U3b.
+U3 implements `providers/` (TripoSR remote, Tripo, Hi3D, Rodin Gen-2.5 + BANG),
+the cost router (`prefer_local`, `--spend` gate), and `schema/job.provider.schema.json`.
+Full MWT1 SSH capability probes + pinning TripoSR on-node remain **U3b** — keep
+transports injectable (`RemoteFSTransport` / `HTTPTransport`).
 
 ## Testing
 
@@ -59,6 +60,8 @@ pip install -e ".[dev]"
 pytest
 python -m composite3dgen --help
 python -m composite3dgen build-packs fixtures/u2-sample --executor local
+python -m composite3dgen route --stage triposr --stage tripo
+python -m composite3dgen run fixtures/u2-sample --executor local --json
 ```
 
 ## Playbook pointers

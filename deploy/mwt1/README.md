@@ -30,14 +30,21 @@ This directory will hold install/pin notes for TripoSR, photogrammetry, and Blen
 
 Prefer MWT1 for every stage that does not require a paid cloud API. Controller degraded mode is fallback only — see `docs/playbook/WORKFLOW.md`.
 
-## U2 note (selection interface)
+## U2/U3 note (selection + TripoSR transport)
 
-`composite3dgen` already selects MWT1 vs local via `nodes.executor.select_executor`
-for ingest / quality / packs. Until **U3b** wires real SSH health + capability
-probes (`ffmpeg`, writable job root, Python image stack, …), the default probe
-reports unhealthy and the CLI falls back to controller local. Follow-ups for U3b:
+`composite3dgen` selects MWT1 vs local via `nodes.executor.select_executor` for
+ingest / quality / packs. The TripoSR adapter stages images over an injectable
+`RemoteFSTransport` (`providers/transport.py`) and invokes a pinned `run.py`.
 
-- Injectable SSH transport + `~/composite3dgen/jobs/` writability check
-- Probe `ffmpeg` (required for video frame extract on-node)
-- Record Blender / CUDA / COLMAP facts in this README
-- Fail closed with remediation when a required capability is missing
+Until **U3b** wires real SSH health + capability probes, the default health probe
+reports unhealthy (controller local degraded mode) and the CLI virtualizes
+TripoSR as dry-run when no transport is injected.
+
+### U3b must fill
+
+- Wire `SubprocessSSHTransport(host="mwt1")` after probes pass; keep injection for tests
+- Capability matrix: SSH, writable `~/composite3dgen/jobs/`, `ffmpeg`, Python image stack, CUDA/PyTorch (~6GB+ VRAM), `blender` path, optional `colmap`/`meshroom`
+- Install/pin TripoSR under `~/composite3dgen/vendor/TripoSR` — replace placeholder pin in `providers/triposr.py` (`TRIPOSR_PIN_COMMIT`) with the real git SHA + weights path
+- Confirm `run.py` CLI flags (`--output-dir`, mesh.glb/obj layout) match the adapter pull paths
+- Fail closed with remediation text in this README when a required capability is missing
+- Record verified Blender / CUDA / COLMAP facts here (user `davethompson` on `192.168.50.212`)

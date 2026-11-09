@@ -24,6 +24,8 @@ Default: climb the ladder from free local stages; stop when QA passes. Paid clou
 4. **TripoSR role boundary** — single-image (or per-view independent) draft. **Not** true multi-view fusion. Do not treat TripoSR success as proof of unseen sides.
 5. **Reuse before re-spend** — ingest existing GLM Tripo generations / staging assembly fixtures when available (U5).
 
+U3 CLI: `composite3dgen route` prints the plan; `composite3dgen run` records virtual jobs under `manifests/provider_jobs.json` when dry-run. Full silhouette/BOM ledger that *requires* QA miss text before `--spend` hard-blocks is **U7**; U3 already demotes unjustified live cloud to dry-run + `block_reason`.
+
 ## Quality tiers
 
 | Tier | Deliverable | Gate |

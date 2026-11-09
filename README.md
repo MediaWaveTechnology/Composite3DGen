@@ -6,7 +6,7 @@ Primary local compute: **MWT1** (`ssh mwt1`) — TripoSR drafts, Blender explode
 
 ## Status
 
-**U2** — subject manifest + ingest/quality/cardinal packs (MWT1-capable selection). Provider adapters / Blender / QA land in U3–U7.
+**U3** — provider adapters (TripoSR / Tripo / Hi3D / Rodin) + cost router with `--spend` gate. U2 packs remain the local prep path. Blender explode / fixtures E2E / full QA ledger land in U4–U7; MWT1 capability probes in **U3b**.
 
 ## Quick start
 
@@ -32,10 +32,11 @@ python -m composite3dgen build-packs path/to/job --executor local
 | `--spend` | Authorize paid cloud provider calls. Default: dry-run / local-only. |
 | `--prefer-local` / `--no-prefer-local` | Prefer MWT1/local free stages (default: on). |
 | `build-packs <job_dir>` | U2: ingest → quality → identical `build_packs/{triposr,tripo,hi3d,rodin}/`. |
-| `run [job_dir]` | With a job dir, runs U2 local ingest→packs; later units add reconstruct. |
+| `run [job_dir]` | Packs (unless `--skip-packs`) + routed provider jobs. Dry-run records virtual jobs; live cloud needs `--spend` + QA miss (or `--no-prefer-local`). |
+| `route` | Print cost/quality route plan JSON without executing adapters. |
 | `doctor` | Executor selection + stub probe (full MWT1 capabilities in U3b). |
 
-MWT1 is preferred for ffmpeg ingest / quality / packs when healthy; controller local is the degraded fallback. Full SSH capability probes are a **U3b** follow-up.
+MWT1 is preferred for ffmpeg ingest / quality / packs / TripoSR when healthy; controller local is the degraded fallback. Full SSH capability probes are a **U3b** follow-up.
 
 ## Playbook
 
