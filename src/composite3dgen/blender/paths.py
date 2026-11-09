@@ -1,8 +1,12 @@
-"""Resolve Blender binary paths without inventing verified locations.
+"""Resolve Blender binary paths without inventing unverified locations.
 
-Live paths come from MWT1 health facts or an explicit override. Until a
-LAN / mwt1-worker probe records a path, callers must treat Blender as
-``verify on LAN`` (see ``deploy/mwt1/README.md``).
+MWT1 preferred paths (verified in ``internal/mwt1-capability-probe.md``):
+
+- ``/opt/homebrew/bin/blender`` (Blender 5.2.3 LTS via Homebrew)
+- ``/Applications/Blender.app/Contents/MacOS/Blender`` (App bundle fallback)
+
+Host is Apple M4 Metal — Blender explode/QA is fine; TripoSR CUDA is separate.
+Other hosts / missing probe facts still use ``<verify on LAN>`` until resolved.
 """
 
 from __future__ import annotations
@@ -13,7 +17,13 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from composite3dgen.nodes.health import VERIFY_ON_LAN
-from composite3dgen.nodes.mwt1 import BLENDER_CANDIDATE_PATHS
+from composite3dgen.nodes.mwt1 import (
+    BLENDER_CANDIDATE_PATHS,
+    MWT1_BLENDER_APP_PATH,
+    MWT1_BLENDER_PATH,
+    MWT1_BLENDER_PREFERRED,
+    MWT1_BLENDER_VERSION,
+)
 
 # Marker for unresolved paths — never treat as a real binary.
 UNVERIFIED = f"<{VERIFY_ON_LAN}>"
@@ -45,14 +55,16 @@ def resolve_blender_path(
     explicit: str | Path | None = None,
     health_facts: Mapping[str, Any] | None = None,
     prefer_local_which: bool = False,
+    prefer_mwt1_documented: bool = False,
 ) -> BlenderPathResolution:
-    """Resolve Blender path from explicit override, health facts, or local which.
+    """Resolve Blender path from explicit override, health facts, or MWT1 docs.
 
     Order:
     1. ``explicit`` if provided (caller-verified / test inject).
     2. ``health_facts['blender_path']`` when present and not a verify marker.
-    3. Optional local ``shutil.which('blender')`` for controller dry/smoke only.
-    4. Otherwise unresolved — ``verified=False``, display ``<verify on LAN>``.
+    3. ``prefer_mwt1_documented`` → Homebrew then App bundle (probe-verified).
+    4. Optional local ``shutil.which('blender')`` for controller dry/smoke only.
+    5. Otherwise unresolved — ``verified=False``, display ``<verify on LAN>``.
     """
     candidates = tuple(BLENDER_CANDIDATE_PATHS)
 
@@ -77,6 +89,20 @@ def resolve_blender_path(
                 note="From MWT1 health probe facts (LAN / mwt1 worker).",
             )
 
+    if prefer_mwt1_documented:
+        # Documented probe preference — Homebrew first, App bundle second.
+        return BlenderPathResolution(
+            path=MWT1_BLENDER_PATH,
+            verified=True,
+            source="mwt1_probe_docs",
+            candidates=candidates,
+            note=(
+                f"MWT1 documented Blender {MWT1_BLENDER_VERSION}: "
+                f"{MWT1_BLENDER_PATH} (prefer); fallback {MWT1_BLENDER_APP_PATH}. "
+                "Apple M4 Metal — explode/QA OK; TripoSR CUDA is separate."
+            ),
+        )
+
     if prefer_local_which:
         found = shutil.which("blender")
         if found:
@@ -87,7 +113,7 @@ def resolve_blender_path(
                 candidates=candidates,
                 note=(
                     "Local `which blender` — controller smoke only; "
-                    "MWT1 happy path still needs LAN probe."
+                    "MWT1 happy path prefers Homebrew/App paths from probe."
                 ),
             )
 
@@ -97,8 +123,9 @@ def resolve_blender_path(
         source="unresolved",
         candidates=candidates,
         note=(
-            f"Blender path {UNVERIFIED}. Run `composite3dgen doctor --live` "
-            "on LAN / mwt1 worker, or pass an explicit path. Do not invent paths."
+            f"Blender path {UNVERIFIED}. For MWT1 use "
+            f"{MWT1_BLENDER_PATH} or {MWT1_BLENDER_APP_PATH} "
+            f"(probe-verified {MWT1_BLENDER_VERSION}), or pass --live health facts."
         ),
     )
 
@@ -112,6 +139,10 @@ def package_script_path(name: str = "explode_hub.py") -> Path:
 
 
 __all__ = [
+    "MWT1_BLENDER_APP_PATH",
+    "MWT1_BLENDER_PATH",
+    "MWT1_BLENDER_PREFERRED",
+    "MWT1_BLENDER_VERSION",
     "UNVERIFIED",
     "BlenderPathResolution",
     "package_script_path",

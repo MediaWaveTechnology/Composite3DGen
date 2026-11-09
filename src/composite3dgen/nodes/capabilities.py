@@ -82,10 +82,12 @@ REMEDIATIONS: dict[CapabilityName, str] = {
         "(`--executor local`)."
     ),
     "job_root_writable": (
-        "Job root not writable. On MWT1: "
-        "`mkdir -p ~/composite3dgen/jobs && touch ~/composite3dgen/jobs/.write_test "
-        "&& rm ~/composite3dgen/jobs/.write_test`. Fix ownership for user "
-        "`davethompson` if mkdir fails."
+        "Job root not writable. Prefer AlanTBrain (not home): "
+        "`mkdir -p /Volumes/AlanTBrain/composite3dgen/jobs "
+        "/Volumes/AlanTBrain/composite3dgen/media && "
+        "touch /Volumes/AlanTBrain/composite3dgen/jobs/.write_test && "
+        "rm /Volumes/AlanTBrain/composite3dgen/jobs/.write_test`. "
+        "Ensure `/Volumes/AlanTBrain` is mounted for user `davethompson`."
     ),
     "ffmpeg": (
         "ffmpeg missing on MWT1. Install (apt/brew) so `command -v ffmpeg` "
@@ -103,19 +105,21 @@ REMEDIATIONS: dict[CapabilityName, str] = {
         "Install a CUDA-matched PyTorch wheel; TripoSR needs ~6GB+ VRAM."
     ),
     "blender": (
-        "Blender not found on PATH or candidate paths. On MWT1 locate the "
-        "binary (`command -v blender` or the install under /usr/bin, "
-        "/usr/local/bin, or ~/blender*/blender) and record the verified path "
-        "in deploy/mwt1/README.md. Do not invent a path."
+        "Blender not found on PATH or candidate paths. On MWT1 prefer "
+        "`/opt/homebrew/bin/blender` then "
+        "`/Applications/Blender.app/Contents/MacOS/Blender` "
+        "(probe-verified Blender 5.2.3 LTS; Apple M4 Metal — explode/QA OK). "
+        "Re-run `composite3dgen doctor --live` if the install moved."
     ),
     "triposr": (
-        "Pinned TripoSR checkout missing. On MWT1: "
-        "`mkdir -p ~/composite3dgen/vendor && "
+        "Pinned TripoSR checkout missing. On MWT1 (AlanTBrain preferred): "
+        "`mkdir -p /Volumes/AlanTBrain/composite3dgen/vendor && "
         "git clone https://github.com/VAST-AI-Research/TripoSR.git "
-        "~/composite3dgen/vendor/TripoSR && "
-        "cd ~/composite3dgen/vendor/TripoSR && "
+        "/Volumes/AlanTBrain/composite3dgen/vendor/TripoSR && "
+        "cd /Volumes/AlanTBrain/composite3dgen/vendor/TripoSR && "
         "git checkout 107cefdc244c39106fa830359024f6a2f1c78871` "
-        "(see deploy/mwt1/README.md). Confirm `run.py` exists."
+        "(see deploy/mwt1/README.md). Confirm `run.py` exists. "
+        "Note: MWT1 is Apple M4 Metal — TripoSR CUDA is a separate issue."
     ),
     "colmap": (
         "COLMAP optional — install when orbit coverage needs local metric "

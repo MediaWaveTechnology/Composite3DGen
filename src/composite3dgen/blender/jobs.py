@@ -264,6 +264,8 @@ def run_blender_explode(
         explicit=blender_path,
         health_facts=health_facts,
         prefer_local_which=allow_local_blender and selection.name == "local",
+        # MWT1 jobs prefer Homebrew / App bundle paths from capability probe.
+        prefer_mwt1_documented=selection.name == "mwt1",
     )
 
     notes: list[str] = [

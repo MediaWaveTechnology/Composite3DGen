@@ -49,10 +49,20 @@ def test_resolve_blender_unverified_by_default() -> None:
     assert VERIFY_ON_LAN in res.as_dict()["display"] or UNVERIFIED == res.as_dict()["display"]
 
 
-def test_resolve_blender_from_health_facts() -> None:
-    res = resolve_blender_path(health_facts={"blender_path": "/usr/bin/blender"})
+def test_resolve_blender_prefers_mwt1_documented() -> None:
+    from composite3dgen.nodes.mwt1 import MWT1_BLENDER_PATH
+
+    res = resolve_blender_path(prefer_mwt1_documented=True)
     assert res.verified is True
-    assert res.path == "/usr/bin/blender"
+    assert res.path == MWT1_BLENDER_PATH
+    assert res.source == "mwt1_probe_docs"
+    assert "5.2.3" in res.note or "Metal" in res.note
+
+
+def test_resolve_blender_from_health_facts() -> None:
+    res = resolve_blender_path(health_facts={"blender_path": "/opt/homebrew/bin/blender"})
+    assert res.verified is True
+    assert res.path == "/opt/homebrew/bin/blender"
     assert res.source == "health_facts"
 
 
@@ -153,8 +163,8 @@ def test_mwt1_with_mock_transport_and_verified_path(tmp_path: Path) -> None:
         force_executor="mwt1",
         mwt1_probe=lambda: True,
         transport=fs,
-        blender_path="/usr/bin/blender",
-        health_facts={"blender_path": "/usr/bin/blender"},
+        blender_path="/opt/homebrew/bin/blender",
+        health_facts={"blender_path": "/opt/homebrew/bin/blender"},
         skip_stills=False,
     )
     # ensure_stage may fail without full health handlers — job should still

@@ -6,7 +6,7 @@ Primary local compute: **MWT1** (`ssh mwt1`) — TripoSR drafts, Blender explode
 
 ## Status
 
-**U4** — BOM hierarchy schema (`parts.hierarchy` 1.0.0) + Blender explode/QA hub (`explode` CLI; Empty parents → GLB + `parts.json` + ortho/silhouette stills). Runs on MWT1 when Blender stage probes pass; dry-run without Blender. Live Blender/CUDA paths: verify on LAN (cloud cannot reach `192.168.50.212`). Fixtures E2E / full QA ledger: U5–U7.
+**U4** — BOM hierarchy schema (`parts.hierarchy` 1.0.0) + Blender explode/QA hub (`explode` CLI; Empty parents → GLB + `parts.json` + ortho/silhouette stills). MWT1 Blender **verified**: `/opt/homebrew/bin/blender` (5.2.3 LTS; App bundle fallback). Host is Apple M4 Metal — explode/QA fine; TripoSR CUDA is separate. Fixtures E2E / full QA ledger: U5–U7.
 
 ## Quick start
 

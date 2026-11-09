@@ -30,9 +30,9 @@ Orchestration and secret resolution stay on the controller (laptop). MWT1 runs G
 ## MWT1
 
 - Host alias: `mwt1` → `192.168.50.212`, user `davethompson` (see `deploy/mwt1/README.md`).
-- Job root: `~/composite3dgen/jobs/`
-- Capabilities: SSH, writable jobs dir, ffmpeg, Python image stack, CUDA/PyTorch (~6GB+ for TripoSR), Blender, optional COLMAP/Meshroom — probed by `composite3dgen doctor` (injectable transport; `--live` for SSH).
-- Live Blender/CUDA/COLMAP paths are **verify on LAN** until recorded from a LAN controller or the mwt1 self-hosted worker probe file. Cloud agents cannot reach the private LAN.
+- Jobs/media: `/Volumes/AlanTBrain/composite3dgen/jobs/` + `…/media/` (**prefer AlanTBrain, not home**)
+- Capabilities: SSH, writable AlanTBrain jobs dir, ffmpeg, Python image stack, CUDA/PyTorch (~6GB+ for TripoSR — separate on M4), Blender, optional COLMAP/Meshroom — probed by `composite3dgen doctor` (injectable transport; `--live` for SSH).
+- Blender on MWT1 is **verified** (`/opt/homebrew/bin/blender`, App bundle fallback; 5.2.3 LTS). Host is Apple M4 Metal — Blender explode/QA OK; TripoSR CUDA / COLMAP remain separate (see `internal/mwt1-capability-probe.md`). Cloud agents cannot SSH the private LAN.
 
 If MWT1 is unreachable, controller may run lightweight stages in **degraded mode** — fallback, not the happy path.
 

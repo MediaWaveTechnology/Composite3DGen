@@ -224,4 +224,9 @@ def test_node_contract_pin() -> None:
     assert contract.address == "192.168.50.212"
     assert contract.user == "davethompson"
     assert len(contract.triposr_pin) >= 7
-    assert mwt1_mod.remote_job_path("qm1", "job1").endswith("qm1/job1")
+    assert contract.job_root.startswith("/Volumes/AlanTBrain/")
+    assert contract.media_root.startswith("/Volumes/AlanTBrain/")
+    assert mwt1_mod.MWT1_BLENDER_PATH == "/opt/homebrew/bin/blender"
+    path = mwt1_mod.remote_job_path("qm1", "job1")
+    assert path.startswith("/Volumes/AlanTBrain/")
+    assert path.endswith("qm1/job1")

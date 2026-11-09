@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """Blender headless hub: Empty hierarchy, explode, GLB + parts.json, QA stills.
 
-Designed for MWT1: ``blender --background --python explode_hub.py -- <args>``.
+Designed for MWT1 (Apple M4 Metal; Blender explode/QA — not TripoSR CUDA).
+
+Preferred binaries (probe-verified Blender 5.2.3 LTS)::
+
+    /opt/homebrew/bin/blender --background --python explode_hub.py -- <args>
+    # fallback:
+    /Applications/Blender.app/Contents/MacOS/Blender --background --python ...
 
 Remesh / UV / bake stay local Blender ops (never cloud) — optional flags only.
 This script does not call any cloud APIs.

@@ -63,7 +63,7 @@ python -m composite3dgen explode path/to/job --executor local
 python -m composite3dgen explode path/to/job --mesh draft.glb --hierarchy parts.in.json
 ```
 
-Without a verified Blender path, the runner **fails closed** to dry-run and keeps the display marker `<verify on LAN>` — it does not invent binary paths.
+MWT1 prefers probe-verified `/opt/homebrew/bin/blender` (then App bundle). Without SSH transport the runner dry-runs schema-valid `parts.json` — it does not invent mesh bytes. Apple M4 Metal is fine for explode/QA; TripoSR CUDA is unrelated.
 
 ## Naming
 
@@ -81,4 +81,4 @@ Without a verified Blender path, the runner **fails closed** to dry-run and keep
 
 - [WORKFLOW.md](WORKFLOW.md) — BOM depth gate
 - [COST_QUALITY_MATRIX.md](COST_QUALITY_MATRIX.md) — when to promote providers vs CAD
-- `deploy/mwt1/README.md` — Blender path verify-on-LAN
+- `deploy/mwt1/README.md` — verified Blender Homebrew / App paths
