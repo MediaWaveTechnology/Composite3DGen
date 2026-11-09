@@ -1,7 +1,7 @@
 """TripoSR remote adapter — stage image → MWT1 → pinned run.py → pull GLB/OBJ.
 
 TripoSR is **local single-image** draft reconstruct ($0). It is not Tripo cloud
-multiview. Full CUDA/path capability probes are **U3b**; this adapter takes an
+multiview. CUDA/path probes live in ``nodes.health``; this adapter takes an
 injectable :class:`RemoteFSTransport`.
 """
 
@@ -21,11 +21,14 @@ from composite3dgen.providers.base import (
 )
 from composite3dgen.providers.transport import MockRemoteFSTransport, RemoteFSTransport
 
-# Pin documented for deploy/mwt1 — U3b verifies the checkout exists on node.
-TRIPOSR_PIN_COMMIT = "2c5d0e1"  # placeholder pin token; replace with real SHA in U3b
-DEFAULT_REMOTE_ROOT = "~/composite3dgen"
-DEFAULT_TRIPOSR_DIR = "~/composite3dgen/vendor/TripoSR"
-DEFAULT_RUN_PY = f"{DEFAULT_TRIPOSR_DIR}/run.py"
+# Pin: VAST-AI-Research/TripoSR main (see deploy/mwt1/README.md). On-node
+# checkout still needs LAN verification via doctor / mwt1-capability-probe.
+from composite3dgen.nodes.mwt1 import (
+    DEFAULT_REMOTE_ROOT,
+    DEFAULT_RUN_PY,
+    DEFAULT_TRIPOSR_DIR,
+    TRIPOSR_PIN_COMMIT,
+)
 
 
 @dataclass
@@ -114,10 +117,11 @@ class TripoSRAdapter:
         fs.makedirs(remote_out)
         fs.upload(Path(image), remote_input)
 
-        # Pinned run.py invocation shape — U3b confirms flags/weights on MWT1.
+        # Upstream run.py writes {output_dir}/{i}/mesh.{obj|glb}. Prefer glb.
         cmd = (
             f"cd {self.remote_root}/vendor/TripoSR && "
-            f"python {self.run_py} {remote_input} --output-dir {remote_out}"
+            f"python {self.run_py} {remote_input} "
+            f"--output-dir {remote_out} --model-save-format glb"
         )
         code, stdout, stderr = fs.run(cmd)
         if code != 0:

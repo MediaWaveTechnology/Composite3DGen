@@ -29,11 +29,12 @@ Orchestration and secret resolution stay on the controller (laptop). MWT1 runs G
 
 ## MWT1
 
-- Host alias: `mwt1` → `192.168.50.212` (user recorded in `deploy/mwt1/README.md` when verified).
-- Job root (planned): `~/composite3dgen/jobs/`
-- Expected capabilities (verified in U3b): SSH, ffmpeg, CUDA/PyTorch (~6GB+ for TripoSR), Blender, optional COLMAP/Meshroom.
+- Host alias: `mwt1` → `192.168.50.212`, user `davethompson` (see `deploy/mwt1/README.md`).
+- Job root: `~/composite3dgen/jobs/`
+- Capabilities: SSH, writable jobs dir, ffmpeg, Python image stack, CUDA/PyTorch (~6GB+ for TripoSR), Blender, optional COLMAP/Meshroom — probed by `composite3dgen doctor` (injectable transport; `--live` for SSH).
+- Live Blender/CUDA/COLMAP paths are **verify on LAN** until recorded from a LAN controller or the mwt1 self-hosted worker probe file. Cloud agents cannot reach the private LAN.
 
-If MWT1 is unreachable, controller may run lightweight stages in **degraded mode** — document that as fallback, not the happy path.
+If MWT1 is unreachable, controller may run lightweight stages in **degraded mode** — fallback, not the happy path.
 
 ## Implementation units (do not jump ahead casually)
 
@@ -41,17 +42,17 @@ If MWT1 is unreachable, controller may run lightweight stages in **degraded mode
 |------|--------|
 | U1 | Repo bootstrap + playbook + CLI stub |
 | U2 | Subject manifest + composite pack builder |
-| U3 | Provider adapters + cost router (this milestone) |
-| U3b | MWT1 node contract + health checks |
+| U3 | Provider adapters + cost router |
+| U3b | MWT1 node contract + health checks (this milestone) |
 | U4 | BOM schema + Blender explode/QA on MWT1 |
 | U5 | GLM fixture intake + dry-run E2E |
 | U6 | RC CAD + photogrammetry on MWT1 |
 | U7 | QA gates + cost ledger |
 
-U3 implements `providers/` (TripoSR remote, Tripo, Hi3D, Rodin Gen-2.5 + BANG),
-the cost router (`prefer_local`, `--spend` gate), and `schema/job.provider.schema.json`.
-Full MWT1 SSH capability probes + pinning TripoSR on-node remain **U3b** — keep
-transports injectable (`RemoteFSTransport` / `HTTPTransport`).
+U3b implements `nodes/mwt1.py`, `nodes/capabilities.py`, `nodes/health.py`
+(injectable capability probes, fail-closed remediations), wires default MWT1
+probe into executor selection, and documents TripoSR pin + deploy notes.
+Do not invent verified Blender paths from cloud. Keep transports injectable.
 
 ## Testing
 
@@ -62,6 +63,9 @@ python -m composite3dgen --help
 python -m composite3dgen build-packs fixtures/u2-sample --executor local
 python -m composite3dgen route --stage triposr --stage tripo
 python -m composite3dgen run fixtures/u2-sample --executor local --json
+python -m composite3dgen doctor
+# LAN / mwt1 worker only:
+# python -m composite3dgen doctor --live
 ```
 
 ## Playbook pointers

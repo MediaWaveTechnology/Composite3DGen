@@ -1,7 +1,7 @@
 """Injectable HTTP and SSH/FS transports for provider adapters.
 
-U3 keeps transports mockable. Full real MWT1 capability probes are **U3b** —
-see ``deploy/mwt1/README.md`` and the U3b handoff notes.
+Capability probes live in ``composite3dgen.nodes.health`` (U3b).
+See ``deploy/mwt1/README.md``.
 """
 
 from __future__ import annotations
@@ -124,9 +124,7 @@ class MockHTTPTransport:
 class RemoteFSTransport(Protocol):
     """SSH/FS surface for TripoSR remote staging on MWT1.
 
-    U3b must fill: real SSH host key checks, capability probes (CUDA, pinned
-    TripoSR path), writable ``~/composite3dgen/jobs/``, and fail-closed
-    remediation. U3 only requires an injectable transport for tests + dry-run.
+    Pair with ``nodes.health`` capability probes before live TripoSR runs.
     """
 
     def run(self, command: str, *, timeout: float = 600.0) -> tuple[int, str, str]:
@@ -190,10 +188,10 @@ class MockRemoteFSTransport:
 
 @dataclass
 class SubprocessSSHTransport:
-    """Thin ``ssh``/``scp`` wrapper — real MWT1 wiring is a **U3b** concern.
+    """Thin ``ssh``/``scp`` wrapper for MWT1.
 
-    Kept injectable so U3 adapters compile against a live-shaped transport
-    without requiring capability probes here.
+    Wire via ``nodes.mwt1.make_ssh_transport()`` after ``doctor --live`` /
+    capability probes pass. Keep injectable for tests.
     """
 
     host: str = "mwt1"

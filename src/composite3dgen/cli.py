@@ -2,7 +2,7 @@
 
 Paid cloud providers stay behind an explicit ``--spend`` gate.
 Local/MWT1 stages are preferred by default (``prefer_local`` / MWT1).
-U3 wires provider dry-run / routed reconstruct after U2 packs.
+U3b wires capability probes into executor selection + TripoSR transport.
 """
 
 from __future__ import annotations
@@ -159,9 +159,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Explicit stage(s); default policy ladder",
     )
 
-    sub.add_parser(
+    doctor = sub.add_parser(
         "doctor",
-        help="Probe local/MWT1 capabilities (stub surface — full probes in U3b)",
+        help="Probe MWT1 capability matrix (injectable; --live attempts SSH)",
+    )
+    doctor.add_argument(
+        "--live",
+        action="store_true",
+        default=False,
+        help=(
+            "Attempt live SSH to Host mwt1. Cloud VMs typically cannot reach "
+            "the private LAN — run this from a LAN controller or mwt1 worker."
+        ),
+    )
+    doctor.add_argument(
+        "--json",
+        action="store_true",
+        default=True,
+        help="Print JSON report (default)",
     )
 
     return parser
@@ -236,6 +251,30 @@ def _run_build_packs(args: argparse.Namespace) -> tuple[int, dict | None]:
     return 0, summary
 
 
+def _resolve_mwt1_triposr_transport():
+    """Return SSH transport when TripoSR stage capabilities pass; else None."""
+    from composite3dgen.nodes import mwt1 as mwt1_mod
+    from composite3dgen.nodes.health import run_health_check
+
+    existing = mwt1_mod.get_default_transport()
+    if existing is not None:
+        report = run_health_check(transport=existing)  # type: ignore[arg-type]
+        if report.stages.get("triposr") == "ready":
+            return existing
+        return None
+
+    # Prefer prefer_mwt1 path: probe live only when explicitly selected healthy.
+    # Avoid surprising cloud agents with long SSH timeouts — try briefly via
+    # default probe installed by doctor / tests, else virtualize.
+    if mwt1_mod.is_healthy():
+        transport = mwt1_mod.make_ssh_transport()
+        report = run_health_check(transport=transport)
+        if report.stages.get("triposr") == "ready":
+            mwt1_mod.set_default_transport(transport)
+            return transport
+    return None
+
+
 def _run_providers(args: argparse.Namespace, *, subject_id: str | None = None) -> int:
     from composite3dgen.providers.router import plan_routes
     from composite3dgen.providers.runner import collect_pack_inputs, run_plan
@@ -259,13 +298,14 @@ def _run_providers(args: argparse.Namespace, *, subject_id: str | None = None) -
     job_dir = Path(args.job_dir)
     inputs = collect_pack_inputs(job_dir, "triposr")
 
-    # Controller is offline-safe: without an injected MWT1 RemoteFSTransport
-    # (U3b), virtualize TripoSR as dry-run so `run` never opens live SSH.
+    # Wire TripoSR live transport only when MWT1 TripoSR stage is ready.
+    # Otherwise virtualize as dry-run (controller/cloud safe).
     from composite3dgen.providers.router import RouteDecision
 
+    triposr_transport = _resolve_mwt1_triposr_transport()
     safe_plan_decisions = []
     for d in plan.decisions:
-        if d.stage == "triposr" and d.mode == "local":
+        if d.stage == "triposr" and d.mode == "local" and triposr_transport is None:
             safe_plan_decisions.append(
                 RouteDecision(
                     stage=d.stage,
@@ -273,9 +313,9 @@ def _run_providers(args: argparse.Namespace, *, subject_id: str | None = None) -
                     mode="dry-run",
                     allowed=d.allowed,
                     block_reason=(
-                        "TripoSR local/MWT1 transport not injected on controller; "
-                        "recording virtual job. U3b wires SubprocessSSHTransport "
-                        "after capability probes."
+                        "TripoSR MWT1 transport unavailable or stage capabilities "
+                        "missing; recording virtual job. Run "
+                        "`composite3dgen doctor --live` on LAN / mwt1 worker."
                     ),
                     estimated_cost=0.0,
                     prefer_local=d.prefer_local,
@@ -285,7 +325,7 @@ def _run_providers(args: argparse.Namespace, *, subject_id: str | None = None) -
                         [
                             *d.notes,
                             "Controller dry-run: TripoSR virtualized "
-                            "(inject RemoteFSTransport for live MWT1).",
+                            "(inject RemoteFSTransport or pass doctor --live).",
                         ]
                     ),
                 )
@@ -306,7 +346,15 @@ def _run_providers(args: argparse.Namespace, *, subject_id: str | None = None) -
         )
         return 2
 
-    result = run_plan(plan, job_dir, subject_id=subject_id, inputs=inputs)
+    bundle = None
+    if triposr_transport is not None:
+        from composite3dgen.providers.runner import default_bundle
+
+        bundle = default_bundle(remote_fs=triposr_transport)
+
+    result = run_plan(
+        plan, job_dir, subject_id=subject_id, inputs=inputs, bundle=bundle
+    )
     summary = result.summary()
     if args.json:
         print(json.dumps(summary, indent=2))
@@ -402,21 +450,47 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_providers(args, subject_id=subject_id)
 
     if args.command == "doctor":
-        from composite3dgen.nodes.capabilities import probe_stub
+        from composite3dgen.nodes import mwt1 as mwt1_mod
         from composite3dgen.nodes.executor import select_executor
+        from composite3dgen.nodes.health import run_health_check
 
-        report = probe_stub()
-        selection = select_executor(prefer_mwt1=bool(args.prefer_local))
-        print(json.dumps({"probe": report, "executor_selection": {
-            "name": selection.name,
-            "reason": selection.reason,
-            "prefer_mwt1": selection.prefer_mwt1,
-        }}, indent=2))
-        print(
-            "composite3dgen doctor: selection hook only; "
-            "full MWT1 capability probes land in U3b.",
-            file=sys.stderr,
+        live = bool(getattr(args, "live", False))
+        if live:
+            transport = mwt1_mod.make_ssh_transport()
+            health = run_health_check(transport=transport)
+            if health.ok:
+                mwt1_mod.set_default_transport(transport)
+                mwt1_mod.set_health_probe(lambda: True)
+            else:
+                mwt1_mod.set_health_probe(lambda: False)
+        else:
+            health = run_health_check()
+
+        # Wire executor selection to the just-probed result when live.
+        selection = select_executor(
+            prefer_mwt1=bool(args.prefer_local),
+            mwt1_probe=(lambda: health.ok) if live else None,
         )
+        payload = {
+            "contract": mwt1_mod.node_contract().as_dict(),
+            "probe": health.as_dict(),
+            "executor_selection": {
+                "name": selection.name,
+                "reason": selection.reason,
+                "prefer_mwt1": selection.prefer_mwt1,
+            },
+        }
+        print(json.dumps(payload, indent=2))
+        if not health.ok:
+            print(
+                "composite3dgen doctor: MWT1 not ready — fail closed; "
+                "see probe.notes / remediations. "
+                "Cloud agents: use mwt1 self-hosted worker or LAN controller "
+                "with --live.",
+                file=sys.stderr,
+            )
+            # Non-live skipped probes are informational (exit 0). Live miss → 1.
+            return 1 if live else 0
         return 0
 
     parser.error(f"unknown command: {args.command}")

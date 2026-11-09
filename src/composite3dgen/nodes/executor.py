@@ -1,4 +1,4 @@
-"""Select MWT1 vs controller-local executor for MWT1-capable stages (U2)."""
+"""Select MWT1 vs controller-local executor for MWT1-capable stages."""
 
 from __future__ import annotations
 
@@ -6,13 +6,14 @@ from dataclasses import dataclass
 from typing import Callable, Literal, Protocol
 
 from composite3dgen.nodes import mwt1
+from composite3dgen.nodes.capabilities import StageName
 
 ExecutorName = Literal["mwt1", "local"]
 HealthProbe = Callable[[], bool]
 
 
 class Executor(Protocol):
-    """Minimal executor surface for U2 local stages."""
+    """Minimal executor surface for local / MWT1 stages."""
 
     @property
     def name(self) -> ExecutorName: ...
@@ -34,7 +35,7 @@ class LocalExecutor:
 
 @dataclass(frozen=True)
 class MWT1Executor:
-    """MWT1 executor. Health uses injectable probe until U3b SSH lands."""
+    """MWT1 executor. Health uses injectable probe / default capability check."""
 
     probe: HealthProbe | None = None
 
@@ -44,6 +45,10 @@ class MWT1Executor:
 
     def is_healthy(self) -> bool:
         return mwt1.is_healthy(self.probe)
+
+    def ensure_stage(self, stage: StageName) -> None:
+        """Fail closed if the stage's required capabilities are missing."""
+        mwt1.ensure_stage(stage, transport=mwt1.get_default_transport())
 
 
 @dataclass(frozen=True)
@@ -70,11 +75,10 @@ def select_executor(
 
     Policy (from playbook):
     - Happy path: MWT1 when healthy (ingest / quality / packs).
-    - Degraded: controller local when MWT1 unreachable.
+    - Degraded: controller local when MWT1 unreachable / missing base caps.
     - ``force`` overrides selection for dry-run / debugging.
 
-    Full SSH capability probes remain a **U3b** follow-up; U2 wires the
-    selection interface and healthy-check hook only.
+    Health is fail-closed via capability probes (U3b), not a bare ping.
     """
     if force == "local":
         return ExecutorSelection(
@@ -86,7 +90,7 @@ def select_executor(
     if force == "mwt1":
         return ExecutorSelection(
             executor=MWT1Executor(probe=mwt1_probe),
-            reason="Forced MWT1 executor (U3b will enforce capability probes)",
+            reason="Forced MWT1 executor (capability probes still apply to stages)",
             prefer_mwt1=prefer_mwt1,
             forced=force,
         )
@@ -100,7 +104,7 @@ def select_executor(
         )
 
     reason = (
-        "MWT1 unhealthy or probe unimplemented — controller local degraded mode"
+        "MWT1 unhealthy or unreachable — controller local degraded mode"
         if prefer_mwt1
         else "prefer_mwt1 disabled — using controller local"
     )

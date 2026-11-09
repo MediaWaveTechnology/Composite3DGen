@@ -48,7 +48,12 @@ capture OK?
           RC leaf fitment → CadQuery + Fusion (not AI alone)
 ```
 
+## MWT1 capability gate (before climbing the ladder)
+
+`composite3dgen doctor` probes SSH, job root, ffmpeg, Python image stack, CUDA/PyTorch, Blender, TripoSR pin, optional COLMAP/Meshroom. Executor selection prefers MWT1 only when **base** capabilities pass; TripoSR/Blender/photogrammetry stages additionally require their own caps (see WORKFLOW.md). Fail closed — do not invent Blender paths from cloud.
+
 ## Related
 
 - [WORKFLOW.md](WORKFLOW.md) — stages and `--spend` policy
 - [BOM_SCHEMA.md](BOM_SCHEMA.md) — L1/L2 vs leaf
+- [`deploy/mwt1/README.md`](../../deploy/mwt1/README.md) — install / verify-on-LAN facts

@@ -31,6 +31,7 @@ cardinal JPEGs. Packs missing `front.jpg` are rejected.
 
 ```bash
 python -m composite3dgen --help
-python -m composite3dgen doctor   # selection hook; full probes in U3b
+python -m composite3dgen doctor          # capability matrix (no live SSH)
+# python -m composite3dgen doctor --live  # LAN / mwt1 worker only
 # --spend authorizes paid cloud later (U3+); ignored for build-packs
 ```

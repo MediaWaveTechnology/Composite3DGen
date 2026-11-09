@@ -1,28 +1,167 @@
-"""Capability probe surface.
+"""Capability names, stage matrix, and fail-closed remediations for MWT1.
 
-U2 exposes a lightweight healthy-check hook via :func:`probe_stub`.
-Full capability matrix (ffmpeg, CUDA, Blender, COLMAP, …) lands in **U3b**.
+U3b: probes live in :mod:`composite3dgen.nodes.health`. This module is the
+contract surface — which stages need which capabilities, and what to tell the
+operator when a required probe fails.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Literal
 
-from composite3dgen.nodes import mwt1
+CapabilityName = Literal[
+    "ssh",
+    "job_root_writable",
+    "ffmpeg",
+    "python_image",
+    "cuda_pytorch",
+    "blender",
+    "triposr",
+    "colmap",
+    "meshroom",
+]
+
+StageName = Literal[
+    "ingest_ffmpeg",
+    "quality_composites",
+    "triposr",
+    "photogrammetry",
+    "blender_explode",
+    "qa_renders",
+]
+
+CapabilityStatus = Literal["ready", "blocked"]
+
+# Ordered for doctor / report output.
+CAPABILITY_ORDER: tuple[CapabilityName, ...] = (
+    "ssh",
+    "job_root_writable",
+    "ffmpeg",
+    "python_image",
+    "cuda_pytorch",
+    "blender",
+    "triposr",
+    "colmap",
+    "meshroom",
+)
+
+# Required for preferring MWT1 over controller-local for U2 packs.
+BASE_REQUIRED: tuple[CapabilityName, ...] = (
+    "ssh",
+    "job_root_writable",
+    "ffmpeg",
+    "python_image",
+)
+
+OPTIONAL_CAPABILITIES: frozenset[CapabilityName] = frozenset(
+    {"colmap", "meshroom"}
+)
+
+# Stage → required capabilities (fail closed when any are missing).
+STAGE_REQUIREMENTS: dict[StageName, tuple[CapabilityName, ...]] = {
+    "ingest_ffmpeg": ("ssh", "job_root_writable", "ffmpeg"),
+    "quality_composites": ("ssh", "job_root_writable", "python_image"),
+    "triposr": ("ssh", "job_root_writable", "cuda_pytorch", "triposr"),
+    "photogrammetry": ("ssh", "job_root_writable"),  # needs colmap OR meshroom
+    "blender_explode": ("ssh", "job_root_writable", "blender"),
+    "qa_renders": ("ssh", "job_root_writable", "blender", "python_image"),
+}
+
+# Photogrammetry needs at least one of these optional tools.
+PHOTOGRAMMETRY_ANY_OF: tuple[CapabilityName, ...] = ("colmap", "meshroom")
+
+MIN_TRIPOSR_VRAM_GB = 6.0
+
+REMEDIATIONS: dict[CapabilityName, str] = {
+    "ssh": (
+        "Cannot reach MWT1 over SSH. From a LAN controller: "
+        "`ssh mwt1` (Host mwt1 → 192.168.50.212, user davethompson). "
+        "Cloud VMs cannot reach the private LAN — place a follow-up agent on "
+        "the mwt1 self-hosted worker, or run `composite3dgen doctor --live` "
+        "from the controller. Until then, use controller degraded mode "
+        "(`--executor local`)."
+    ),
+    "job_root_writable": (
+        "Job root not writable. On MWT1: "
+        "`mkdir -p ~/composite3dgen/jobs && touch ~/composite3dgen/jobs/.write_test "
+        "&& rm ~/composite3dgen/jobs/.write_test`. Fix ownership for user "
+        "`davethompson` if mkdir fails."
+    ),
+    "ffmpeg": (
+        "ffmpeg missing on MWT1. Install (apt/brew) so `command -v ffmpeg` "
+        "succeeds; required for video frame extract on the happy path."
+    ),
+    "python_image": (
+        "Python image stack incomplete on MWT1. Need python3 with Pillow "
+        "(`python3 -c 'from PIL import Image'`). Optional: numpy. "
+        "Install into the node env used for quality/composites."
+    ),
+    "cuda_pytorch": (
+        "CUDA/PyTorch unavailable or VRAM < ~6GB for TripoSR. On MWT1 verify: "
+        "`python3 -c \"import torch; print(torch.cuda.is_available(), "
+        "torch.cuda.get_device_properties(0).total_memory/(1024**3))\"`. "
+        "Install a CUDA-matched PyTorch wheel; TripoSR needs ~6GB+ VRAM."
+    ),
+    "blender": (
+        "Blender not found on PATH or candidate paths. On MWT1 locate the "
+        "binary (`command -v blender` or the install under /usr/bin, "
+        "/usr/local/bin, or ~/blender*/blender) and record the verified path "
+        "in deploy/mwt1/README.md. Do not invent a path."
+    ),
+    "triposr": (
+        "Pinned TripoSR checkout missing. On MWT1: "
+        "`mkdir -p ~/composite3dgen/vendor && "
+        "git clone https://github.com/VAST-AI-Research/TripoSR.git "
+        "~/composite3dgen/vendor/TripoSR && "
+        "cd ~/composite3dgen/vendor/TripoSR && "
+        "git checkout 107cefdc244c39106fa830359024f6a2f1c78871` "
+        "(see deploy/mwt1/README.md). Confirm `run.py` exists."
+    ),
+    "colmap": (
+        "COLMAP optional — install when orbit coverage needs local metric "
+        "multi-view (U6). Missing COLMAP alone does not block base MWT1 packs."
+    ),
+    "meshroom": (
+        "Meshroom optional — alternative to COLMAP for photogrammetry (U6). "
+        "Missing Meshroom alone does not block base MWT1 packs."
+    ),
+}
 
 
-def probe_stub() -> dict[str, Any]:
-    """Return a placeholder capability report (U3b fills real probes)."""
-    healthy = mwt1.is_healthy()
-    return {
-        "node": mwt1.host_alias(),
-        "address": mwt1.host_address(),
-        "status": "healthy" if healthy else "unreachable_or_unimplemented",
-        "capabilities": {
-            # U3b: ssh, job_root_writable, ffmpeg, python_image, cuda, blender, colmap
-        },
-        "notes": (
-            "U2 selection interface only. Full MWT1 SSH capability probes "
-            "and remediation text land in U3b."
-        ),
-    }
+class CapabilityError(RuntimeError):
+    """Raised when a stage is requested but required capabilities are missing."""
+
+    def __init__(
+        self,
+        *,
+        stage: StageName,
+        missing: tuple[CapabilityName, ...],
+        remediations: tuple[str, ...] = (),
+    ) -> None:
+        self.stage = stage
+        self.missing = missing
+        self.remediations = remediations
+        msg = (
+            f"MWT1 cannot run stage '{stage}': missing {', '.join(missing)}. "
+            "Fail closed — see remediation notes."
+        )
+        if remediations:
+            msg = msg + "\n" + "\n".join(remediations)
+        super().__init__(msg)
+
+
+def remediation_for(name: CapabilityName) -> str:
+    """Return operator remediation text for a capability."""
+    return REMEDIATIONS[name]
+
+
+def required_for_stage(stage: StageName) -> tuple[CapabilityName, ...]:
+    """Return hard-required capabilities for a pipeline stage."""
+    return STAGE_REQUIREMENTS[stage]
+
+
+def probe_stub() -> dict:
+    """Backward-compatible stub used by older call sites; prefer health.probe."""
+    from composite3dgen.nodes.health import run_health_check
+
+    return run_health_check().as_dict()

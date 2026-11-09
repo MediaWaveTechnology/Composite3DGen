@@ -1,19 +1,23 @@
-# Example systemd user unit for a pinned TripoSR worker on MWT1.
-# Stub for U3b — adjust paths after install; never embed API keys.
+# Example systemd user unit for documenting a pinned TripoSR checkout on MWT1.
+# Jobs are driven over SSH from the controller — this is not a long-running daemon.
+# Never embed API keys or Hugging Face tokens here.
 #
 #   ~/.config/systemd/user/composite3dgen-triposr.service
 #
-# [Unit]
-# Description=Composite3DGen TripoSR worker (example)
-# After=default.target
-#
-# [Service]
-# Type=oneshot
-# WorkingDirectory=%h/composite3dgen/triposr
-# ExecStart=%h/composite3dgen/triposr/.venv/bin/python run.py --help
-# # Real invoke is job-driven via SSH from the controller, not a long-running daemon.
-#
-# [Install]
-# WantedBy=default.target
+# Adjust paths after LAN verify. Pin:
+#   107cefdc244c39106fa830359024f6a2f1c78871
 
-# Placeholder — do not enable until U3b pins the TripoSR commit + weights.
+[Unit]
+Description=Composite3DGen TripoSR env smoke (example oneshot)
+After=default.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/composite3dgen/vendor/TripoSR
+# Prefer the venv created during install (verify on LAN):
+ExecStart=%h/composite3dgen/vendor/TripoSR/.venv/bin/python run.py --help
+# Real reconstruct:
+#   python run.py /path/to/input.png --output-dir /path/to/out --model-save-format glb
+
+[Install]
+WantedBy=default.target

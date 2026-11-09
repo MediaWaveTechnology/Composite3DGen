@@ -49,7 +49,19 @@ Approximate cloud reference (order-of-magnitude; verify live pricing):
 
 - Treat MWT1 as the primary node for every stage that does not require a paid cloud API.
 - Controller degraded mode (run lightweight stages locally if MWT1 is down) is a **fallback**, not the documented happy path.
-- Capability probes and remediation live in U3b (`composite3dgen doctor`, `deploy/mwt1/`).
+- Capability probes + fail-closed remediations: `composite3dgen doctor` / `doctor --live` (LAN or mwt1 self-hosted worker). See `deploy/mwt1/README.md`.
+
+### Stage capability requirements (U3b)
+
+| Stage | Requires on MWT1 |
+|-------|------------------|
+| Ingest / ffmpeg | SSH, writable `~/composite3dgen/jobs/`, `ffmpeg` |
+| Quality / composites / packs | SSH, writable jobs dir, Python Pillow image stack |
+| TripoSR | SSH, jobs dir, CUDA/PyTorch (~6GB+ VRAM), pinned TripoSR + `run.py` |
+| Photogrammetry (U6) | SSH, jobs dir, **and** `colmap` **or** Meshroom |
+| Blender explode / QA stills (U4) | SSH, jobs dir, `blender` (+ Pillow for silhouette scoring) |
+
+Missing **required** capabilities fail closed with remediation text. Optional COLMAP/Meshroom absence does not block base packs. Cloud VMs cannot reach `192.168.50.212` — live paths stay `<verify on LAN>` until probed from LAN/mwt1 worker.
 
 ## Job directory pattern (planned)
 
