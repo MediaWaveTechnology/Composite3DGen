@@ -29,3 +29,15 @@ This directory will hold install/pin notes for TripoSR, photogrammetry, and Blen
 ## Policy
 
 Prefer MWT1 for every stage that does not require a paid cloud API. Controller degraded mode is fallback only — see `docs/playbook/WORKFLOW.md`.
+
+## U2 note (selection interface)
+
+`composite3dgen` already selects MWT1 vs local via `nodes.executor.select_executor`
+for ingest / quality / packs. Until **U3b** wires real SSH health + capability
+probes (`ffmpeg`, writable job root, Python image stack, …), the default probe
+reports unhealthy and the CLI falls back to controller local. Follow-ups for U3b:
+
+- Injectable SSH transport + `~/composite3dgen/jobs/` writability check
+- Probe `ffmpeg` (required for video frame extract on-node)
+- Record Blender / CUDA / COLMAP facts in this README
+- Fail closed with remediation when a required capability is missing

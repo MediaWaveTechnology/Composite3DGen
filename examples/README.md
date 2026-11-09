@@ -1,14 +1,36 @@
 # Examples
 
-Minimal usage notes. Full job walks land with U2+.
+## Build packs from a job directory (U2)
+
+Job layout:
+
+```
+job/
+  manifests/subject.manifest.json
+  frames/   # or photos/ / video/ via capture.media_paths
+```
 
 ```bash
-# Help / smoke
+# Prefer MWT1 when healthy; force local for controller degraded mode / CI
+python -m composite3dgen build-packs ./path/to/job --executor local
+
+# Equivalent dry-run/local run stage
+python -m composite3dgen run ./path/to/job --executor local
+```
+
+Sample fixture:
+
+```bash
+python -m composite3dgen build-packs fixtures/u2-sample --executor local
+```
+
+Expects identical `build_packs/{triposr,tripo,hi3d,rodin}/` with `README.md` and
+cardinal JPEGs. Packs missing `front.jpg` are rejected.
+
+## Global flags
+
+```bash
 python -m composite3dgen --help
-
-# Stub run (no pipeline yet)
-python -m composite3dgen run ./path/to/job
-
-# Authorize paid cloud later (U3+); still prefers local by default
-python -m composite3dgen --spend run ./path/to/job
+python -m composite3dgen doctor   # selection hook; full probes in U3b
+# --spend authorizes paid cloud later (U3+); ignored for build-packs
 ```

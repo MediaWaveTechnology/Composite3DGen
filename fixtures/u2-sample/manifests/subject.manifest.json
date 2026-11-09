@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "subject_id": "u2-sample",
+  "display_name": "U2 sample cardinals",
+  "domain": "generic",
+  "units": "mm",
+  "capture": {
+    "source_type": "frames",
+    "media_paths": ["frames"],
+    "notes": "Synthetic stills for pack-builder smoke; no paid cloud."
+  },
+  "angles": {
+    "required": ["front", "left", "back", "right"],
+    "optional": ["top", "iso"],
+    "hints": {
+      "front": "front.jpg",
+      "left": "left.jpg",
+      "back": "back.jpg",
+      "right": "right.jpg"
+    }
+  },
+  "notes": "Fixture for U2 tests and local dry-run demos."
+}

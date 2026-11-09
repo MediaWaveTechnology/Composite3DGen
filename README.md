@@ -6,13 +6,13 @@ Primary local compute: **MWT1** (`ssh mwt1`) — TripoSR drafts, Blender explode
 
 ## Status
 
-**U1 bootstrap** — package layout, CLI stub, playbook skeleton. Pipeline stages land in U2–U7.
+**U2** — subject manifest + ingest/quality/cardinal packs (MWT1-capable selection). Provider adapters / Blender / QA land in U3–U7.
 
 ## Quick start
 
 ```bash
 # Editable install (Python ≥ 3.10)
-pip install -e .
+pip install -e ".[dev]"
 
 # Or run without installing via PYTHONPATH / src layout:
 PYTHONPATH=src python -m composite3dgen --help
@@ -22,16 +22,20 @@ Smoke:
 
 ```bash
 python -m composite3dgen --help
+python -m composite3dgen build-packs path/to/job --executor local
 ```
 
-## CLI (stub)
+## CLI
 
 | Flag / command | Meaning |
 |----------------|---------|
 | `--spend` | Authorize paid cloud provider calls. Default: dry-run / local-only. |
 | `--prefer-local` / `--no-prefer-local` | Prefer MWT1/local free stages (default: on). |
-| `run [job_dir]` | Run a job (stub until U2+). |
-| `doctor` | Probe local/MWT1 capabilities (stub until U3b). |
+| `build-packs <job_dir>` | U2: ingest → quality → identical `build_packs/{triposr,tripo,hi3d,rodin}/`. |
+| `run [job_dir]` | With a job dir, runs U2 local ingest→packs; later units add reconstruct. |
+| `doctor` | Executor selection + stub probe (full MWT1 capabilities in U3b). |
+
+MWT1 is preferred for ffmpeg ingest / quality / packs when healthy; controller local is the degraded fallback. Full SSH capability probes are a **U3b** follow-up.
 
 ## Playbook
 

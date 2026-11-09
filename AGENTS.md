@@ -39,8 +39,8 @@ If MWT1 is unreachable, controller may run lightweight stages in **degraded mode
 
 | Unit | Scope |
 |------|--------|
-| U1 | Repo bootstrap + playbook + CLI stub (this milestone) |
-| U2 | Subject manifest + composite pack builder |
+| U1 | Repo bootstrap + playbook + CLI stub |
+| U2 | Subject manifest + composite pack builder (this milestone) |
 | U3 | Provider adapters + cost router |
 | U3b | MWT1 node contract + health checks |
 | U4 | BOM schema + Blender explode/QA on MWT1 |
@@ -48,14 +48,17 @@ If MWT1 is unreachable, controller may run lightweight stages in **degraded mode
 | U6 | RC CAD + photogrammetry on MWT1 |
 | U7 | QA gates + cost ledger |
 
-Empty package stubs under `src/composite3dgen/{ingest,composites,packs,providers,nodes,blender,qa}/` are intentional placeholders. Do not invent fake provider implementations beyond empty packages until the matching unit.
+U2 implements `manifest/`, `ingest/`, `composites/`, `packs/`, and the nodes
+executor selection interface. Do not invent fake cloud provider clients until U3.
+Full MWT1 SSH capability probes remain U3b.
 
 ## Testing
 
 ```bash
 pip install -e ".[dev]"
 pytest
-python -m composite3dgen --help   # U1 smoke
+python -m composite3dgen --help
+python -m composite3dgen build-packs fixtures/u2-sample --executor local
 ```
 
 ## Playbook pointers

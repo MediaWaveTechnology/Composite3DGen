@@ -30,6 +30,12 @@ jobs/
 *.fbx
 !fixtures/**/*.md
 
+# Generated pack / quality outputs (keep source frames + manifests)
+fixtures/**/build_packs/
+fixtures/**/manifests/frame_quality.json
+fixtures/**/manifests/pack_angles.json
+fixtures/**/manifests/_pack_staging/
+
 # OS / editor
 .DS_Store
 .idea/
