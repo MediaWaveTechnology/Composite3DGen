@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mediawavetechnology.example/composite3dgen/schema/subject.manifest.schema.json",
+  "title": "SubjectManifest",
+  "description": "Stub — full subject/domain/capture manifest lands in U2.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1.0-stub" },
+    "subject_id": { "type": "string", "minLength": 1 },
+    "domain": {
+      "type": "string",
+      "enum": ["glm", "rc", "generic"],
+      "description": "Domain profile; GLM industrial, RC, or generic."
+    }
+  },
+  "required": ["schema_version", "subject_id"]
+}

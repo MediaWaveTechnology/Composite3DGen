@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mediawavetechnology.example/composite3dgen/schema/job.provider.schema.json",
+  "title": "JobProviderRecord",
+  "description": "Stub — provider job records + cost fields land in U3/U7.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1.0-stub" },
+    "provider": {
+      "type": "string",
+      "enum": ["triposr", "tripo", "hi3d", "rodin", "colmap", "meshroom", "blender", "seedance"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["dry-run", "local", "live"],
+      "description": "live requires --spend for paid cloud providers."
+    },
+    "consumed": {
+      "type": ["number", "null"],
+      "description": "API cost consumed when known; local stages use 0."
+    }
+  },
+  "required": ["schema_version", "provider", "mode"]
+}

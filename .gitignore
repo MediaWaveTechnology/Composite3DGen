@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Secrets / local credentials — never commit
+*.pem
+*.key
+credentials.json
+secrets/
+.bw-session
+
+# Job / media working trees
+jobs/
+*.glb
+*.gltf
+*.obj
+*.fbx
+!fixtures/**/*.md
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Coverage
+.coverage
+htmlcov/

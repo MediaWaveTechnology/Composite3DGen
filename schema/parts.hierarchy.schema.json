@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mediawavetechnology.example/composite3dgen/schema/parts.hierarchy.schema.json",
+  "title": "PartsHierarchy",
+  "description": "Stub — L1/L2/leaf BOM hierarchy + explode metadata lands in U4.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1.0-stub" },
+    "tier": {
+      "type": "string",
+      "enum": ["L1", "L2", "leaf"],
+      "description": "Deepest claimed BOM tier for this export."
+    },
+    "parts": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    }
+  },
+  "required": ["schema_version"]
+}
