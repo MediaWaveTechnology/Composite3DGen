@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "subject_id": "glm-qm1",
+  "display_name": "GLM QM1 industrial machine (curated fixture)",
+  "domain": "glm",
+  "units": "mm",
+  "known_dimensions": {
+    "notes": "Envelope unknown in fixture; dimensions deferred to operator capture / CAD lane."
+  },
+  "capture": {
+    "source_type": "frames",
+    "media_paths": ["frames"],
+    "notes": "Curated cardinal stills for dry-run pack intake. Not a live video dump."
+  },
+  "angles": {
+    "required": ["front", "left", "back", "right"],
+    "optional": ["top", "iso"],
+    "hints": {
+      "front": "front.jpg",
+      "left": "left.jpg",
+      "back": "back.jpg",
+      "right": "right.jpg"
+    }
+  },
+  "reuse": {
+    "prior_provider_outs": [
+      {
+        "provider": "tripo",
+        "path": "recorded/tripo/parts-task.json",
+        "notes": "Recorded Tripo H3.1 multiview + generate_parts proof — reuse only; do not re-spend."
+      },
+      {
+        "provider": "tripo",
+        "path": "recorded/tripo/texture-task.json",
+        "notes": "Recorded Tripo texture-on-parts proof — reuse only; do not re-spend."
+      },
+      {
+        "provider": "blender",
+        "path": "staging/qm1-assembly.json",
+        "notes": "Staging L1/L2 assembly (not the live dump-truck stub)."
+      }
+    ]
+  },
+  "notes": "U5 fixture: dry-run E2E without cloud spend. Large GLBs are external media refs only (see recorded/media-refs.json). Do not treat dump-truck stubs as QM1 truth."
+}

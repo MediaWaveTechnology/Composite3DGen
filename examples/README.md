@@ -27,11 +27,22 @@ python -m composite3dgen build-packs fixtures/u2-sample --executor local
 Expects identical `build_packs/{triposr,tripo,hi3d,rodin}/` with `README.md` and
 cardinal JPEGs. Packs missing `front.jpg` are rejected.
 
+## GLM QM1 dry-run E2E (U5)
+
+```bash
+python -m composite3dgen dry-run fixtures/glm-qm1 --executor local --json
+```
+
+Runs packs → virtual TripoSR/Tripo jobs → Blender L1/L2 from
+`staging/qm1-assembly.json` → `manifests/dry_run_checklist.json`.
+Reuses `recorded/tripo/*` proofs; large GLBs stay as external/LFS refs.
+Refuses `--spend` (zero new cloud spend).
+
 ## Global flags
 
 ```bash
 python -m composite3dgen --help
 python -m composite3dgen doctor          # capability matrix (no live SSH)
 # python -m composite3dgen doctor --live  # LAN / mwt1 worker only
-# --spend authorizes paid cloud later (U3+); ignored for build-packs
+# --spend authorizes paid cloud later (U3+); ignored for build-packs / refused by dry-run
 ```

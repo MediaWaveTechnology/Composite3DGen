@@ -179,6 +179,60 @@ def build_parser() -> argparse.ArgumentParser:
         help="Print JSON report (default)",
     )
 
+    dry = sub.add_parser(
+        "dry-run",
+        help=(
+            "U5: end-to-end dry-run — packs → virtual providers → Blender "
+            "L1/L2 hierarchy → verification checklist (no cloud spend; "
+            "reuses recorded GLM/Tripo proofs when present)"
+        ),
+    )
+    dry.add_argument(
+        "job_dir",
+        type=Path,
+        help="Job / fixture directory (e.g. fixtures/glm-qm1)",
+    )
+    dry.add_argument(
+        "--manifest",
+        type=Path,
+        default=None,
+        help="Optional path to subject.manifest.json",
+    )
+    dry.add_argument(
+        "--hierarchy",
+        type=Path,
+        default=None,
+        help="Optional staging hierarchy JSON (default: staging/qm1-assembly.json)",
+    )
+    dry.add_argument(
+        "--executor",
+        choices=("auto", "mwt1", "local"),
+        default="auto",
+        help="Force executor selection (default: auto — MWT1 if healthy)",
+    )
+    dry.add_argument(
+        "--skip-packs",
+        action="store_true",
+        help="Skip U2 ingest→packs (use existing build_packs/)",
+    )
+    dry.add_argument(
+        "--stage",
+        action="append",
+        default=[],
+        metavar="STAGE",
+        help="Virtual provider stage(s); default: triposr + tripo",
+    )
+    dry.add_argument(
+        "--prefix",
+        default="local",
+        help="Verification filename prefix (local-* / live-*)",
+    )
+    dry.add_argument(
+        "--json",
+        action="store_true",
+        help="Print machine-readable summary JSON",
+    )
+
     explode = sub.add_parser(
         "explode",
         help=(
@@ -462,6 +516,57 @@ def _cmd_route(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_dry_run(args: argparse.Namespace) -> int:
+    from composite3dgen.dryrun import run_dry_run_e2e
+
+    if args.spend:
+        print(
+            "composite3dgen: error: dry-run refuses --spend "
+            "(U5 success is zero new cloud spend; use `run --spend` for live).",
+            file=sys.stderr,
+        )
+        return 2
+
+    prefer_mwt1 = bool(args.prefer_local)
+    force = _force_from_args(args.executor)
+    stages = list(args.stage) if args.stage else None
+    result = run_dry_run_e2e(
+        Path(args.job_dir),
+        manifest_path=args.manifest,
+        hierarchy_path=args.hierarchy,
+        prefer_mwt1=prefer_mwt1,
+        force_executor=force,  # type: ignore[arg-type]
+        skip_packs=bool(args.skip_packs),
+        stages=stages,
+        prefix=str(args.prefix),
+        spend_requested=False,
+    )
+    summary = result.summary()
+    if args.json:
+        print(json.dumps(summary, indent=2))
+    else:
+        print(
+            f"dry-run ok={result.ok}: subject={result.subject_id} "
+            f"consumed={result.this_run_consumed} "
+            f"reused={len(result.reused_records)}"
+        )
+        if result.explode:
+            print(
+                f"  explode: mode={result.explode.mode} "
+                f"tier={summary.get('explode', {}).get('tier')} "
+                f"parts={result.explode.parts_path}"
+            )
+        if result.checklist_path:
+            print(f"  checklist: {result.checklist_path}")
+        for item in result.checklist:
+            print(f"  [{item.status}] {item.id}: {item.label}")
+        for note in result.notes[:8]:
+            print(f"  note: {note}")
+        if result.error:
+            print(f"composite3dgen: error: {result.error}", file=sys.stderr)
+    return 0 if result.ok else 1
+
+
 def _cmd_explode(args: argparse.Namespace) -> int:
     from composite3dgen.blender.jobs import run_blender_explode
 
@@ -530,6 +635,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "route":
         return _cmd_route(args)
+
+    if args.command == "dry-run":
+        return _cmd_dry_run(args)
 
     if args.command == "explode":
         return _cmd_explode(args)

@@ -36,6 +36,7 @@ fixtures/**/out/
 fixtures/**/manifests/frame_quality.json
 fixtures/**/manifests/pack_angles.json
 fixtures/**/manifests/provider_jobs.json
+fixtures/**/manifests/dry_run_checklist.json
 fixtures/**/manifests/_pack_staging/
 
 # OS / editor

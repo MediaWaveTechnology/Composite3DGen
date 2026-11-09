@@ -77,6 +77,19 @@ jobs/<subject-id>/
   verification/   # local-* / live-* / *-exploded-l1.png
 ```
 
+## Dry-run E2E (U5)
+
+Zero-spend proof path for curated fixtures (GLM QM1 first):
+
+```bash
+python -m composite3dgen dry-run fixtures/glm-qm1 --executor local
+```
+
+Stages: packs → virtual local/cloud providers → Blender hierarchy (staging
+L1/L2) → `manifests/dry_run_checklist.json`. Reuses recorded Tripo
+parts/texture task records; large GLBs are external/LFS refs only. Do **not**
+treat live dump-truck assembly stubs as QM1 truth. `dry-run` refuses `--spend`.
+
 ## Related
 
 - [COST_QUALITY_MATRIX.md](COST_QUALITY_MATRIX.md) — routing ladder

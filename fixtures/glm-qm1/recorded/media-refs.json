@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "subject_id": "glm-qm1",
+  "policy": "Large GLBs are not committed as binary truth in this fixture. Use Git LFS pointers or external media paths on AlanTBrain. Do not invent a dump-truck mesh as QM1.",
+  "refs": [
+    {
+      "id": "tripo_parts_glb",
+      "kind": "glb",
+      "approx_size_mb": 41,
+      "lfs_pointer": null,
+      "external_paths": [
+        "/Volumes/AlanTBrain/composite3dgen/media/glm-qm1/tripo-parts.glb"
+      ],
+      "status": "external_ref_only",
+      "notes": "Recorded Tripo generate_parts mesh (~41MB). Stage onto AlanTBrain before Blender import on MWT1."
+    },
+    {
+      "id": "tripo_textured_glb",
+      "kind": "glb",
+      "approx_size_mb": 101,
+      "lfs_pointer": null,
+      "external_paths": [
+        "/Volumes/AlanTBrain/composite3dgen/media/glm-qm1/tripo-textured.glb"
+      ],
+      "status": "external_ref_only",
+      "notes": "Recorded Tripo textured parts mesh (~101MB). Prefer LFS when committing; never treat dump-truck stub as this asset."
+    }
+  ],
+  "git_lfs": {
+    "recommended_patterns": ["*.glb", "*.gltf"],
+    "note": "When media lands in-repo, track via Git LFS. Until then, dry-run uses staging hierarchy + task records only."
+  }
+}

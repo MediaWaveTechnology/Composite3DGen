@@ -6,7 +6,7 @@ Primary local compute: **MWT1** (`ssh mwt1`) — TripoSR drafts, Blender explode
 
 ## Status
 
-**U4** — BOM hierarchy schema (`parts.hierarchy` 1.0.0) + Blender explode/QA hub (`explode` CLI; Empty parents → GLB + `parts.json` + ortho/silhouette stills). MWT1 Blender **verified**: `/opt/homebrew/bin/blender` (5.2.3 LTS; App bundle fallback). Host is Apple M4 Metal — explode/QA fine; TripoSR CUDA is separate. Fixtures E2E / full QA ledger: U5–U7.
+**U5** — GLM QM1 fixture intake + end-to-end dry-run (`dry-run` CLI): packs → virtual providers → Blender L1/L2 → verification checklist at **$0** this-run (reuses recorded Tripo proofs; large GLBs via external/LFS refs). U4 Blender hub + U3b MWT1 contract underneath. Full QA ledger / spend hard-block: U7.
 
 ## Quick start
 
@@ -33,6 +33,7 @@ python -m composite3dgen build-packs path/to/job --executor local
 | `--prefer-local` / `--no-prefer-local` | Prefer MWT1/local free stages (default: on). |
 | `build-packs <job_dir>` | U2: ingest → quality → identical `build_packs/{triposr,tripo,hi3d,rodin}/`. |
 | `run [job_dir]` | Packs (unless `--skip-packs`) + routed provider jobs. Dry-run records virtual jobs; live cloud needs `--spend` + QA miss (or `--no-prefer-local`). |
+| `dry-run <job_dir>` | U5 E2E: packs → virtual providers → Blender L1/L2 → checklist. Refuses `--spend`; reuses recorded GLM/Tripo proofs. |
 | `route` | Print cost/quality route plan JSON without executing adapters. |
 | `explode [job_dir]` | U4: Blender Empty hierarchy + explode export + QA stills (MWT1 when capable; dry-run otherwise). |
 | `doctor` | MWT1 capability matrix (SSH, jobs dir, ffmpeg, Pillow, CUDA, Blender, TripoSR, optional COLMAP). |
