@@ -24,3 +24,14 @@ def test_build_parser_spend_default_off() -> None:
     args = build_parser().parse_args([])
     assert args.spend is False
     assert args.prefer_local is True
+
+
+def test_explode_subparser_present() -> None:
+    from composite3dgen.cli import build_parser
+
+    args = build_parser().parse_args(
+        ["explode", "/tmp/job", "--executor", "local", "--json"]
+    )
+    assert args.command == "explode"
+    assert args.executor == "local"
+    assert args.json is True

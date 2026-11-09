@@ -6,7 +6,7 @@ Primary local compute: **MWT1** (`ssh mwt1`) — TripoSR drafts, Blender explode
 
 ## Status
 
-**U3b** — MWT1 node contract + capability health checks (`doctor` / `doctor --live`). U3 provider adapters + cost router remain; U2 packs remain the local prep path. Blender explode / fixtures E2E / full QA ledger land in U4–U7. Live Blender/CUDA paths: verify on LAN (cloud cannot reach `192.168.50.212`).
+**U4** — BOM hierarchy schema (`parts.hierarchy` 1.0.0) + Blender explode/QA hub (`explode` CLI; Empty parents → GLB + `parts.json` + ortho/silhouette stills). Runs on MWT1 when Blender stage probes pass; dry-run without Blender. Live Blender/CUDA paths: verify on LAN (cloud cannot reach `192.168.50.212`). Fixtures E2E / full QA ledger: U5–U7.
 
 ## Quick start
 
@@ -34,10 +34,11 @@ python -m composite3dgen build-packs path/to/job --executor local
 | `build-packs <job_dir>` | U2: ingest → quality → identical `build_packs/{triposr,tripo,hi3d,rodin}/`. |
 | `run [job_dir]` | Packs (unless `--skip-packs`) + routed provider jobs. Dry-run records virtual jobs; live cloud needs `--spend` + QA miss (or `--no-prefer-local`). |
 | `route` | Print cost/quality route plan JSON without executing adapters. |
+| `explode [job_dir]` | U4: Blender Empty hierarchy + explode export + QA stills (MWT1 when capable; dry-run otherwise). |
 | `doctor` | MWT1 capability matrix (SSH, jobs dir, ffmpeg, Pillow, CUDA, Blender, TripoSR, optional COLMAP). |
 | `doctor --live` | Attempt live SSH probes (LAN controller or mwt1 worker; cloud VMs typically fail closed). |
 
-MWT1 is preferred for ffmpeg ingest / quality / packs / TripoSR when base capabilities pass; controller local is the degraded fallback.
+MWT1 is preferred for ffmpeg ingest / quality / packs / TripoSR / Blender explode when base capabilities pass; controller local is the degraded fallback.
 
 ## Playbook
 
@@ -53,7 +54,7 @@ MWT1 is preferred for ffmpeg ingest / quality / packs / TripoSR when base capabi
 ```
 src/composite3dgen/   # Package (ingest, packs, providers, nodes, blender, qa)
 docs/playbook/        # Operator playbook
-schema/               # JSON schemas (stubs → U2/U4)
+schema/               # JSON schemas (subject, parts.hierarchy, job.provider)
 deploy/mwt1/          # MWT1 install notes (U3b)
 fixtures/             # GLM QM1 + RC DEX410 curated proofs (U5/U6)
 tests/                # Unit / integration tests

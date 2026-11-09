@@ -179,6 +179,72 @@ def build_parser() -> argparse.ArgumentParser:
         help="Print JSON report (default)",
     )
 
+    explode = sub.add_parser(
+        "explode",
+        help=(
+            "U4: Blender Empty hierarchy + explode GLB/parts.json + QA stills "
+            "(MWT1 when capable; dry-run without Blender)"
+        ),
+    )
+    explode.add_argument(
+        "job_dir",
+        type=Path,
+        help="Job directory (writes out/blender/parts.json + planned stills)",
+    )
+    explode.add_argument(
+        "--manifest",
+        type=Path,
+        default=None,
+        help="Optional subject.manifest.json (for subject_id)",
+    )
+    explode.add_argument(
+        "--mesh",
+        type=Path,
+        default=None,
+        help="Input mesh (.glb/.obj) for Blender import; optional in dry-run",
+    )
+    explode.add_argument(
+        "--hierarchy",
+        type=Path,
+        default=None,
+        help="Input parts hierarchy JSON (default: synthetic L1/L2 example)",
+    )
+    explode.add_argument(
+        "--executor",
+        choices=("auto", "mwt1", "local"),
+        default="auto",
+        help="Force executor selection (default: auto — MWT1 if healthy)",
+    )
+    explode.add_argument(
+        "--explode-factor",
+        type=float,
+        default=None,
+        help="Override explode factor applied to per-node offsets",
+    )
+    explode.add_argument(
+        "--skip-stills",
+        action="store_true",
+        help="Skip orthographic/silhouette QA stills when Blender runs",
+    )
+    explode.add_argument(
+        "--allow-local-blender",
+        action="store_true",
+        help=(
+            "If local executor and `blender` is on PATH, invoke it for smoke. "
+            "Happy path remains MWT1; default without Blender is dry-run."
+        ),
+    )
+    explode.add_argument(
+        "--prefix",
+        default="local",
+        help="Verification filename prefix (local-* / live-*)",
+    )
+    explode.add_argument(
+        "--json",
+        action="store_true",
+        help="Print machine-readable summary JSON",
+    )
+
     return parser
 
 
@@ -396,6 +462,60 @@ def _cmd_route(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_explode(args: argparse.Namespace) -> int:
+    from composite3dgen.blender.jobs import run_blender_explode
+
+    prefer_mwt1 = bool(args.prefer_local)
+    force = _force_from_args(args.executor)
+    subject_id = None
+    try:
+        from composite3dgen.pipeline import resolve_manifest
+
+        subject_id = resolve_manifest(Path(args.job_dir), args.manifest).subject_id
+    except Exception:  # noqa: BLE001 — hierarchy may supply subject_id
+        subject_id = None
+
+    result = run_blender_explode(
+        Path(args.job_dir),
+        subject_id=subject_id,
+        input_mesh=args.mesh,
+        hierarchy_path=args.hierarchy,
+        prefer_mwt1=prefer_mwt1,
+        force_executor=force,  # type: ignore[arg-type]
+        explode_factor=args.explode_factor,
+        skip_stills=bool(args.skip_stills),
+        prefix=str(args.prefix),
+        allow_local_blender=bool(args.allow_local_blender),
+    )
+    summary = result.summary()
+    if args.json:
+        print(json.dumps(summary, indent=2))
+    else:
+        print(
+            f"explode ok={result.ok}: mode={result.mode} "
+            f"executor={result.executor.name} "
+            f"blender={summary['blender']['display']} "
+            f"tier={summary.get('tier')}"
+        )
+        if result.parts_path:
+            print(f"  parts: {result.parts_path}")
+        if result.glb_path:
+            print(f"  glb: {result.glb_path}")
+        if result.verification:
+            print(f"  verification: {len(result.verification)} still(s)")
+        for note in result.notes[:6]:
+            print(f"  note: {note}")
+        if result.error:
+            print(f"composite3dgen: error: {result.error}", file=sys.stderr)
+            return 1
+    if args.spend:
+        print(
+            "note: --spend ignored for explode (local Blender/MWT1 stage; $0).",
+            file=sys.stderr,
+        )
+    return 0 if result.ok else 1
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
@@ -410,6 +530,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "route":
         return _cmd_route(args)
+
+    if args.command == "explode":
+        return _cmd_explode(args)
 
     if args.command == "run":
         if not args.job_dir:

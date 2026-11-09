@@ -43,15 +43,16 @@ If MWT1 is unreachable, controller may run lightweight stages in **degraded mode
 | U1 | Repo bootstrap + playbook + CLI stub |
 | U2 | Subject manifest + composite pack builder |
 | U3 | Provider adapters + cost router |
-| U3b | MWT1 node contract + health checks (this milestone) |
-| U4 | BOM schema + Blender explode/QA on MWT1 |
+| U3b | MWT1 node contract + health checks |
+| U4 | BOM schema + Blender explode/QA on MWT1 (this milestone) |
 | U5 | GLM fixture intake + dry-run E2E |
 | U6 | RC CAD + photogrammetry on MWT1 |
 | U7 | QA gates + cost ledger |
 
-U3b implements `nodes/mwt1.py`, `nodes/capabilities.py`, `nodes/health.py`
-(injectable capability probes, fail-closed remediations), wires default MWT1
-probe into executor selection, and documents TripoSR pin + deploy notes.
+U4 implements `schema/parts.hierarchy.schema.json` (L1/L2 first-class; leaf
+schema-ready), `blender/schema.py` + `blender/jobs.py` + headless
+`blender/scripts/explode_hub.py` (Empty parents → GLB + `parts.json` +
+ortho/silhouette stills on MWT1). Remesh/UV/bake stay local Blender-only.
 Do not invent verified Blender paths from cloud. Keep transports injectable.
 
 ## Testing
@@ -63,9 +64,11 @@ python -m composite3dgen --help
 python -m composite3dgen build-packs fixtures/u2-sample --executor local
 python -m composite3dgen route --stage triposr --stage tripo
 python -m composite3dgen run fixtures/u2-sample --executor local --json
+python -m composite3dgen explode fixtures/u2-sample --executor local --json
 python -m composite3dgen doctor
 # LAN / mwt1 worker only:
 # python -m composite3dgen doctor --live
+# python -m composite3dgen explode path/to/job --mesh draft.glb
 ```
 
 ## Playbook pointers

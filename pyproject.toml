@@ -36,7 +36,7 @@ composite3dgen = "composite3dgen.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-composite3dgen = ["py.typed"]
+composite3dgen = ["py.typed", "blender/scripts/*.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

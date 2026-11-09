@@ -50,6 +50,14 @@ See also `docs/playbook/WORKFLOW.md`.
 | Blender explode / hierarchy | ssh, job_root_writable, blender |
 | QA renders / silhouette prep | ssh, job_root_writable, blender, python_image |
 
+U4 CLI (from controller; scripts execute on MWT1 when stage ready):
+
+```bash
+python -m composite3dgen explode path/to/job --mesh draft.glb --hierarchy parts.in.json
+# Without verified Blender / without transport → dry-run parts.json only
+# (`<verify on LAN>` — do not invent paths)
+```
+
 ## Install TripoSR (on MWT1 — run on LAN)
 
 ```bash
