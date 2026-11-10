@@ -2,43 +2,113 @@
 
 MWT1 is the primary local compute node for Composite3DGen.
 
-**Jobs/media prefer `/Volumes/AlanTBrain/composite3dgen/`** (not the home volume). Home has limited free space; AlanTBrain is the staging disk for Blender explode jobs, packs, and large GLBs.
+Live facts marked **verified** come from store probes:
+- `/cursor/stores/bc-324ff812-5250-4e5d-8668-d1094cebdfc5/internal/mwt1-capability-probe.md`
+- `/cursor/stores/bc-324ff812-5250-4e5d-8668-d1094cebdfc5/internal/mwt1-alantbrain-layout.md`
+
+## Storage policy (live layout)
+
+**Canonical root (capitalized):** `/Volumes/AlanTBrain/Composite3DGen/`
+
+| Path | Role | Status |
+|------|------|--------|
+| `/Volumes/AlanTBrain/Composite3DGen/jobs/` | Job staging (`DEFAULT_JOB_ROOT`) | **verified** created + writable (via Terminal) |
+| `/Volumes/AlanTBrain/Composite3DGen/media/` | Large source media | **verified** created |
+| `/Volumes/AlanTBrain/Composite3DGen/tools/` | Heavy installs (TripoSR, venvs, …) | **verified** created |
+| `/Volumes/AlanTBrain/Composite3DGen/README.txt` | Volume root marker | **verified** |
+| `~/composite3dgen/jobs` | **Symlink** → preferred jobs root | **verified** |
+| `/Volumes/AlanTBrain/composite3dgen/` (lowercase) | Legacy / do not prefer | accept if present; not canonical |
+
+**Why AlanTBrain:** home had only **~13 GiB free** (**verified**, tight). Volume has **~1.4 TiB free** (`df`, **verified**).
+
+### Full Disk Access / agent-worker caveat (**verified**)
+
+| Actor | AlanTBrain list/write |
+|-------|------------------------|
+| Cursor **agent-worker** (`CURSOR_AGENT=1`) | **Denied** — Operation not permitted (even via `~/composite3dgen/jobs` symlink) |
+| **Terminal.app** (Full Disk Access) | **OK** — layout + write proof |
+| `stat`/`ls -lad` of **known** paths from agent | often OK after paths exist; `readdir` of volume root still denied |
+
+**Pipeline implication:** job staging / heavy I/O on AlanTBrain must run under **Terminal.app**, a LaunchAgent with FDA, or after granting **Full Disk Access** to the Cursor agent-worker. Do not assume cloud or agent shells can write the preferred root until FDA is granted.
+
+Write proof (Terminal): `/Volumes/AlanTBrain/Composite3DGen/jobs/.layout-ok` (`layout-verified 2026-11-09T23:51:47Z`).
+
+## Verified host facts
 
 | Fact | Value | Status |
 |------|-------|--------|
-| SSH Host alias | `mwt1` | expected |
-| LAN address | `192.168.50.212` | **verified** (probe) |
-| SSH user | `davethompson` | **verified** (probe) |
-| Job root | `/Volumes/AlanTBrain/composite3dgen/jobs/` | **preferred** (create/mount on AlanTBrain) |
-| Media root | `/Volumes/AlanTBrain/composite3dgen/media/` | **preferred** |
-| Remote root | `/Volumes/AlanTBrain/composite3dgen/` | **preferred** |
-| Home fallback jobs | `~/composite3dgen/jobs/` | probe once created here — **do not** stage large media |
-| TripoSR vendor dir | `/Volumes/AlanTBrain/composite3dgen/vendor/TripoSR` | preferred — **not present** on probe |
-| TripoSR pin commit | `107cefdc244c39106fa830359024f6a2f1c78871` | documented pin (checkout missing on probe) |
-| TripoSR weights | `stabilityai/TripoSR` (Hugging Face) | documented |
-| Blender path | `/opt/homebrew/bin/blender` (also `/Applications/Blender.app/Contents/MacOS/Blender`) | **verified** — Blender 5.2.3 LTS |
-| ffmpeg path | `/opt/homebrew/bin/ffmpeg` | **verified** — ffmpeg 9.0.2 |
-| CUDA device / VRAM | Apple M4 Metal (no CUDA); torch not installed | **probed** — TripoSR CUDA path blocked until torch/MPS install |
-| COLMAP path | not found | **probed** (optional) |
-| Meshroom path | not found | **probed** (optional) |
-| Pillow / numpy | not importable on system python3 | **probed** — blocks `qa_renders` silhouette scoring until image stack installed |
+| Hostname | `MWT1.local` | **verified** |
+| LAN / user | `192.168.50.212`, `davethompson` | **verified** |
+| OS / CPU | macOS arm64, Apple **M4**, **Metal 4** | **verified** |
+| CUDA / `nvidia-smi` | **none** | **verified** |
+| ffmpeg | `/opt/homebrew/bin/ffmpeg` **9.0.2** | **verified** |
+| Blender | `/opt/homebrew/bin/blender` + app bundle — **5.2.3 LTS** | **verified** |
+| Pillow / torch / TripoSR / COLMAP / Meshroom | **missing** | **verified** |
+| AlanTBrain free | **~1.4 TiB** | **verified** |
+| Home free | **~13 GiB** | **verified** (tight) |
 
-Live facts folded from project store `internal/mwt1-capability-probe.md` (mwt1 worker). **Do not invent** paths beyond that probe + the AlanTBrain preference above. Cloud agents still cannot SSH to the private LAN; re-run `doctor --live` on LAN / mwt1 worker if facts drift.
+TripoSR pin (not checked out yet):
 
-## Capability checklist
+| Fact | Value |
+|------|-------|
+| Planned dir | `/Volumes/AlanTBrain/Composite3DGen/tools/TripoSR` |
+| Pin | `107cefdc244c39106fa830359024f6a2f1c78871` |
+| Device | **PyTorch MPS** (experimental); CUDA optional on Linux GPU only |
 
-| Capability | Purpose | Required for |
-|------------|---------|--------------|
-| SSH | Reach node | all MWT1 stages |
-| Writable job root | Stage media / pull GLB on AlanTBrain | all MWT1 stages |
-| `ffmpeg` | Frame extract | ingest |
-| Python image stack (Pillow; numpy optional) | Quality / composites | quality_composites |
-| CUDA / PyTorch (~6GB+ VRAM) | TripoSR | triposr (separate from Blender; M4 has Metal, not CUDA) |
-| Pinned TripoSR + `run.py` | Local draft mesh | triposr |
-| `blender` | Explode / hierarchy / QA stills | blender_explode, qa_renders (U4) |
-| `colmap` / Meshroom | Local metric multi-view | photogrammetry (U6, optional either) |
+## TripoSR: Metal/MPS on mwt1 (experimental)
 
-Probes fail **closed** with remediation text (`composite3dgen doctor`). Missing optional COLMAP/Meshroom does not block base packs.
+**User decision:** try **MPS/Metal**, not CUDA, on this Apple M4.
+
+Capability id `cuda_pytorch` (legacy name) = GPU PyTorch ready: **MPS** *or* **CUDA+≥~6GB VRAM**. **Fail closed** if neither works.
+
+Install under AlanTBrain **via Terminal/FDA**:
+
+```bash
+ROOT=/Volumes/AlanTBrain/Composite3DGen
+python3 -m venv "$ROOT/tools/.venv"
+source "$ROOT/tools/.venv/bin/activate"
+pip install torch torchvision   # macOS arm64 MPS — not a CUDA index
+python -c "import torch; assert torch.backends.mps.is_available(); print('mps_ok')"
+pip install 'Pillow>=10' numpy
+git clone https://github.com/VAST-AI-Research/TripoSR.git "$ROOT/tools/TripoSR"
+cd "$ROOT/tools/TripoSR" && git checkout 107cefdc244c39106fa830359024f6a2f1c78871
+pip install -r requirements.txt
+python run.py --help
+# Live: --device mps --output-dir … --model-save-format glb
+```
+
+## Capability / stage readiness (summary)
+
+| Stage | Status on mwt1 |
+|-------|----------------|
+| ingest (ffmpeg) | ready when job root writable (Terminal/FDA or granted agent FDA) |
+| quality / composites | **blocked** — Pillow missing |
+| TripoSR | **blocked** — no torch/MPS proof, no checkout |
+| Photogrammetry | **blocked** — no COLMAP/Meshroom |
+| Blender explode | paths **ready** (5.2.3 LTS) |
+
+## Files
+
+- `triposr.service.example` — AlanTBrain `tools/` paths; MPS; enable after smoke
+- `photogrammetry.md` — COLMAP/Meshroom missing
+
+## Policy
+
+- Prefer MWT1 for ready stages; AlanTBrain `Composite3DGen` for all heavy I/O.
+- Never embed cloud API keys on MWT1.
+- Accept legacy lowercase `/Volumes/AlanTBrain/composite3dgen` if found; **canonical is capitalized**.
+
+## Re-probe
+
+```bash
+ls -la /Volumes/AlanTBrain/Composite3DGen
+readlink ~/composite3dgen/jobs
+touch /Volumes/AlanTBrain/Composite3DGen/jobs/.w && rm $_
+command -v ffmpeg; blender --version 2>&1 | head -n 1
+python3 -c "import torch; print(getattr(torch.backends,'mps',None) and torch.backends.mps.is_available())"
+test -f /Volumes/AlanTBrain/Composite3DGen/tools/TripoSR/run.py
+PYTHONPATH=src python3 -m composite3dgen doctor --live
+```
 
 ## Stage → capability map
 
@@ -48,7 +118,7 @@ See also `docs/playbook/WORKFLOW.md`.
 |-------|----------------------|
 | ingest (ffmpeg) | ssh, job_root_writable, ffmpeg |
 | quality / composites / packs | ssh, job_root_writable, python_image |
-| TripoSR draft | ssh, job_root_writable, cuda_pytorch, triposr |
+| TripoSR draft | ssh, job_root_writable, cuda_pytorch (MPS or CUDA), triposr |
 | Photogrammetry | ssh, job_root_writable, **and** colmap **or** meshroom |
 | Blender explode / hierarchy | ssh, job_root_writable, blender |
 | QA renders / silhouette prep | ssh, job_root_writable, blender, python_image |
@@ -58,9 +128,8 @@ U4 CLI (from controller; scripts execute on MWT1 when stage ready):
 ```bash
 python -m composite3dgen explode path/to/job --mesh draft.glb --hierarchy parts.in.json
 # MWT1 prefers: /opt/homebrew/bin/blender  (fallback: Blender.app bundle)
-# Job staging: /Volumes/AlanTBrain/composite3dgen/jobs/…
+# Job staging: /Volumes/AlanTBrain/Composite3DGen/jobs/…
 # Without SSH transport → dry-run parts.json only (schema-valid; no invented mesh)
-# Blender explode/QA is Metal-OK on M4; TripoSR CUDA remains a separate install
 ```
 
 Headless invoke shape on the node:
@@ -69,73 +138,3 @@ Headless invoke shape on the node:
 /opt/homebrew/bin/blender --background --python explode_hub.py -- \
   --input mesh.glb --hierarchy hierarchy.json --out-dir out
 ```
-
-## Install TripoSR (on MWT1 — run on LAN)
-
-Prefer AlanTBrain (home volume is tight):
-
-```bash
-mkdir -p /Volumes/AlanTBrain/composite3dgen/{vendor,jobs,media}
-git clone https://github.com/VAST-AI-Research/TripoSR.git \
-  /Volumes/AlanTBrain/composite3dgen/vendor/TripoSR
-cd /Volumes/AlanTBrain/composite3dgen/vendor/TripoSR
-git checkout 107cefdc244c39106fa830359024f6a2f1c78871
-python3 -m venv .venv && source .venv/bin/activate
-# MWT1 is Apple M4 Metal (no CUDA). TripoSR CUDA wheels are a separate issue —
-# install a Metal/MPS-capable torch only if pursuing local TripoSR on this host.
-pip install -r requirements.txt
-# Weights pull from Hugging Face on first run: stabilityai/TripoSR
-python run.py --help
-```
-
-`run.py` flags used by the adapter: input image(s), `--output-dir`, `--model-save-format glb`. Outputs land at `{output_dir}/0/mesh.glb` (or `.obj`).
-
-## CUDA / Metal notes
-
-- Blender explode/QA on M4 Metal is the U4 happy path — no CUDA required.
-- TripoSR historically expects CUDA (~6GB+ VRAM). On this M4 host that is a **separate** install/decision (MPS/torch or offload) — do not block Blender staging on TripoSR readiness.
-- `torchmcubes` CUDA build issues usually mean CUDA/toolchain mismatch — see upstream TripoSR README.
-
-## ffmpeg / COLMAP
-
-- `ffmpeg` is required for video ingest on the happy path (`/opt/homebrew/bin/ffmpeg`).
-- COLMAP / Meshroom are optional until U6 photogrammetry execution; probe them now so doctor reports readiness.
-
-## Files in this directory
-
-- `triposr.service.example` — example oneshot unit shape (no secrets; jobs are SSH-driven)
-- `photogrammetry.md` — COLMAP/Meshroom notes (U6)
-
-## Policy
-
-- Prefer MWT1 for every stage that does not require a paid cloud API.
-- Stage jobs/media on **AlanTBrain**, not home.
-- Controller degraded mode (`--executor local`) is fallback only.
-- **Never** embed Tripo / Hi3D / Rodin / Seedance API keys on MWT1 or in this README.
-- Executor selection: `nodes.executor.select_executor` uses capability health (not bare ping).
-- TripoSR adapter uses injectable `RemoteFSTransport`; CLI wires `SubprocessSSHTransport` only when the `triposr` stage probes pass.
-
-## Follow-up commands (mwt1 worker / LAN)
-
-Exact commands for a live probe agent:
-
-```bash
-hostname; whoami
-df -h /Volumes/AlanTBrain /System/Volumes/Data
-ls /Volumes/AlanTBrain
-command -v ffmpeg; ffmpeg -version | head -n 1
-command -v blender; ls /opt/homebrew/bin/blender /Applications/Blender.app/Contents/MacOS/Blender 2>/dev/null
-/opt/homebrew/bin/blender --version 2>&1 | head -n 1
-python3 -c "from PIL import Image; print('pillow_ok')"
-python3 -c "import torch; print(getattr(torch,'__version__',None), getattr(getattr(torch,'cuda',None),'is_available',lambda:None)())" 2>&1 || echo no_torch
-command -v colmap; command -v meshroom_batch; command -v Meshroom
-mkdir -p /Volumes/AlanTBrain/composite3dgen/{jobs,media} \
-  && touch /Volumes/AlanTBrain/composite3dgen/jobs/.write_test \
-  && rm /Volumes/AlanTBrain/composite3dgen/jobs/.write_test && echo alantbrain_job_root_ok
-test -f /Volumes/AlanTBrain/composite3dgen/vendor/TripoSR/run.py \
-  && git -C /Volumes/AlanTBrain/composite3dgen/vendor/TripoSR rev-parse HEAD
-# From repo checkout on controller/worker:
-PYTHONPATH=src python3 -m composite3dgen doctor --live
-```
-
-Record results into `internal/mwt1-capability-probe.md` (project store), then update the status table above — mark **verified** only for values present in that probe file.

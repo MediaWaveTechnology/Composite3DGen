@@ -55,17 +55,19 @@ Approximate cloud reference (order-of-magnitude; verify live pricing):
 
 | Stage | Requires on MWT1 |
 |-------|------------------|
-| Ingest / ffmpeg | SSH, writable `/Volumes/AlanTBrain/composite3dgen/jobs/`, `ffmpeg` |
-| Quality / composites / packs | SSH, writable AlanTBrain jobs dir, Python Pillow image stack |
-| TripoSR | SSH, AlanTBrain jobs dir, CUDA/PyTorch (~6GB+ VRAM), pinned TripoSR + `run.py` (separate on M4 Metal) |
-| Photogrammetry (U6) | SSH, AlanTBrain jobs dir, **and** `colmap` **or** Meshroom |
-| Blender explode / QA stills (U4) | SSH, AlanTBrain jobs dir, `blender` (+ Pillow for silhouette scoring) |
+| Ingest / ffmpeg | SSH, writable jobs dir (prefer AlanTBrain), `ffmpeg` |
+| Quality / composites / packs | SSH, writable jobs dir, Python Pillow image stack |
+| TripoSR | SSH, jobs dir, **MPS (mwt1)** or CUDA (optional Linux), pinned TripoSR + `run.py` |
+| Photogrammetry (U6) | SSH, jobs dir, **and** `colmap` **or** Meshroom |
+| Blender explode / QA stills (U4) | SSH, jobs dir, `blender` (+ Pillow for silhouette scoring) |
 
-Missing **required** capabilities fail closed with remediation text. Jobs/media prefer **AlanTBrain** (not home). Optional COLMAP/Meshroom absence does not block base packs. Blender on MWT1 is probe-verified (`/opt/homebrew/bin/blender`, 5.2.3 LTS; Apple M4 Metal — explode/QA OK). TripoSR CUDA / COLMAP stay separate. Cloud VMs cannot reach `192.168.50.212`.
+Missing **required** capabilities fail closed with remediation text. Optional COLMAP/Meshroom absence does not block base packs.
+
+**Live MWT1 (verified):** Apple **M4 / Metal**. Jobs/media/tools → `/Volumes/AlanTBrain/Composite3DGen/` (capitalized; home too small; agent needs FDA/Terminal for volume I/O). TripoSR = **experimental MPS**. ffmpeg + Blender 5.2.3 LTS ready; Pillow/torch/TripoSR/COLMAP **missing**. See `deploy/mwt1/README.md`.
 
 ## Job directory pattern (planned)
 
-Prefer `/Volumes/AlanTBrain/composite3dgen/jobs/<subject-id>/` on MWT1:
+Prefer `/Volumes/AlanTBrain/Composite3DGen/jobs/<subject-id>/` on MWT1:
 
 ```
 jobs/<subject-id>/

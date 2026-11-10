@@ -70,6 +70,7 @@ STAGE_REQUIREMENTS: dict[StageName, tuple[CapabilityName, ...]] = {
 # Photogrammetry needs at least one of these optional tools.
 PHOTOGRAMMETRY_ANY_OF: tuple[CapabilityName, ...] = ("colmap", "meshroom")
 
+# Applies to CUDA hosts only; MPS path on mwt1 does not use this threshold.
 MIN_TRIPOSR_VRAM_GB = 6.0
 
 REMEDIATIONS: dict[CapabilityName, str] = {
@@ -82,12 +83,12 @@ REMEDIATIONS: dict[CapabilityName, str] = {
         "(`--executor local`)."
     ),
     "job_root_writable": (
-        "Job root not writable. Prefer AlanTBrain (not home): "
-        "`mkdir -p /Volumes/AlanTBrain/composite3dgen/jobs "
-        "/Volumes/AlanTBrain/composite3dgen/media && "
-        "touch /Volumes/AlanTBrain/composite3dgen/jobs/.write_test && "
-        "rm /Volumes/AlanTBrain/composite3dgen/jobs/.write_test`. "
-        "Ensure `/Volumes/AlanTBrain` is mounted for user `davethompson`."
+        "Job root not writable. Canonical path: "
+        "`/Volumes/AlanTBrain/Composite3DGen/jobs/` "
+        "(~/composite3dgen/jobs is a symlink). If Operation not permitted, "
+        "Cursor agent-worker lacks Full Disk Access — run mkdir/write via "
+        "Terminal.app (FDA) or grant FDA to the agent worker. See "
+        "deploy/mwt1/README.md."
     ),
     "ffmpeg": (
         "ffmpeg missing on MWT1. Install (apt/brew) so `command -v ffmpeg` "
@@ -96,13 +97,14 @@ REMEDIATIONS: dict[CapabilityName, str] = {
     "python_image": (
         "Python image stack incomplete on MWT1. Need python3 with Pillow "
         "(`python3 -c 'from PIL import Image'`). Optional: numpy. "
-        "Install into the node env used for quality/composites."
+        "Install into a venv under `/Volumes/AlanTBrain/Composite3DGen/tools/`."
     ),
     "cuda_pytorch": (
-        "CUDA/PyTorch unavailable or VRAM < ~6GB for TripoSR. On MWT1 verify: "
-        "`python3 -c \"import torch; print(torch.cuda.is_available(), "
-        "torch.cuda.get_device_properties(0).total_memory/(1024**3))\"`. "
-        "Install a CUDA-matched PyTorch wheel; TripoSR needs ~6GB+ VRAM."
+        "PyTorch GPU backend unavailable for TripoSR. On mwt1 (Apple M4) the "
+        "path is **experimental MPS/Metal** — install a macOS PyTorch build and "
+        "confirm `torch.backends.mps.is_available()`. CUDA is optional (Linux "
+        "GPU hosts only, ~6GB+ VRAM). Fail closed until MPS or CUDA works; else "
+        "promote to cloud after QA miss + --spend. See deploy/mwt1/README.md."
     ),
     "blender": (
         "Blender not found on PATH or candidate paths. On MWT1 prefer "
@@ -112,14 +114,13 @@ REMEDIATIONS: dict[CapabilityName, str] = {
         "Re-run `composite3dgen doctor --live` if the install moved."
     ),
     "triposr": (
-        "Pinned TripoSR checkout missing. On MWT1 (AlanTBrain preferred): "
-        "`mkdir -p /Volumes/AlanTBrain/composite3dgen/vendor && "
+        "Pinned TripoSR checkout missing. On MWT1 (AlanTBrain, via Terminal/FDA): "
+        "`mkdir -p /Volumes/AlanTBrain/Composite3DGen/tools && "
         "git clone https://github.com/VAST-AI-Research/TripoSR.git "
-        "/Volumes/AlanTBrain/composite3dgen/vendor/TripoSR && "
-        "cd /Volumes/AlanTBrain/composite3dgen/vendor/TripoSR && "
+        "/Volumes/AlanTBrain/Composite3DGen/tools/TripoSR && "
+        "cd /Volumes/AlanTBrain/Composite3DGen/tools/TripoSR && "
         "git checkout 107cefdc244c39106fa830359024f6a2f1c78871` "
-        "(see deploy/mwt1/README.md). Confirm `run.py` exists. "
-        "Note: MWT1 is Apple M4 Metal — TripoSR CUDA is a separate issue."
+        "(see deploy/mwt1/README.md). Confirm `run.py` exists. Use --device mps."
     ),
     "colmap": (
         "COLMAP optional — install when orbit coverage needs local metric "

@@ -30,9 +30,11 @@ Orchestration and secret resolution stay on the controller (laptop). MWT1 runs G
 ## MWT1
 
 - Host alias: `mwt1` → `192.168.50.212`, user `davethompson` (see `deploy/mwt1/README.md`).
-- Jobs/media: `/Volumes/AlanTBrain/composite3dgen/jobs/` + `…/media/` (**prefer AlanTBrain, not home**)
-- Capabilities: SSH, writable AlanTBrain jobs dir, ffmpeg, Python image stack, CUDA/PyTorch (~6GB+ for TripoSR — separate on M4), Blender, optional COLMAP/Meshroom — probed by `composite3dgen doctor` (injectable transport; `--live` for SSH).
-- Blender on MWT1 is **verified** (`/opt/homebrew/bin/blender`, App bundle fallback; 5.2.3 LTS). Host is Apple M4 Metal — Blender explode/QA OK; TripoSR CUDA / COLMAP remain separate (see `internal/mwt1-capability-probe.md`). Cloud agents cannot SSH the private LAN.
+- **Storage:** canonical `/Volumes/AlanTBrain/Composite3DGen/{jobs,media,tools}/` (**verified**); `~/composite3dgen/jobs` → symlink. Cursor agent-worker lacks FDA on AlanTBrain — use Terminal/FDA for writes. Lowercase `…/composite3dgen` is legacy only.
+- **Verified hardware:** Apple M4 / arm64 / **Metal** — **no CUDA**.
+- **Verified ready:** ffmpeg 9.0.2; Blender 5.2.3 LTS (`/opt/homebrew/bin/blender`, App bundle fallback).
+- **Verified missing:** Pillow/numpy/torch, TripoSR checkout, COLMAP, Meshroom.
+- **TripoSR:** try **PyTorch MPS** (experimental) on mwt1; CUDA optional on Linux GPU hosts only. Probes fail closed if MPS (and CUDA) unavailable. Cloud agents cannot SSH the private LAN.
 
 If MWT1 is unreachable, controller may run lightweight stages in **degraded mode** — fallback, not the happy path.
 
