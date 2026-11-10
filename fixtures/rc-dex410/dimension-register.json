@@ -1,0 +1,123 @@
+{
+  "schema_version": "1.0.0",
+  "subject_id": "rc-dex410",
+  "domain": "rc",
+  "units": "mm",
+  "profile": "dex410",
+  "envelope": {
+    "length": {
+      "value": 349.25,
+      "units": "mm",
+      "confidence": "inferred",
+      "evidence": "Published review spec 13.75 in → 349.25 mm (not caliper-confirmed on this chassis)."
+    },
+    "width": {
+      "value": 248.92,
+      "units": "mm",
+      "confidence": "inferred",
+      "evidence": "Published review spec 9.8 in → 248.92 mm."
+    },
+    "wheelbase": {
+      "value": 281.94,
+      "units": "mm",
+      "confidence": "inferred",
+      "evidence": "Published range 10.9–11.2 in; mid ≈ 11.1 in → 281.94 mm."
+    },
+    "notes": "Envelope from public review numbers — mark confirmed after caliper / setup sheet on the physical DEX410."
+  },
+  "entries": [
+    {
+      "dim_id": "chassis_aluminum_width",
+      "label": "Chassis aluminum plate width",
+      "value": 89.66,
+      "units": "mm",
+      "confidence": "confirmed",
+      "axis": "width",
+      "part_ids": ["l1-chassis", "leaf-chassis-plate"],
+      "evidence": "Community caliper note: aluminum chassis 3.530 in (89.66 mm).",
+      "notes": "Use as primary confirmed width for mate-chain to side pods."
+    },
+    {
+      "dim_id": "overall_width_with_sideguards",
+      "label": "Overall width including plastic side guards",
+      "value": 111.0,
+      "units": "mm",
+      "confidence": "confirmed",
+      "axis": "width",
+      "part_ids": ["l1-chassis", "l2-side-pods"],
+      "evidence": "Community measure: 111 mm at widest including side guards."
+    },
+    {
+      "dim_id": "wheelbase_nominal",
+      "label": "Wheelbase (nominal mid-range)",
+      "value": 281.94,
+      "units": "mm",
+      "confidence": "inferred",
+      "axis": "wheelbase",
+      "part_ids": ["l1-front-suspension", "l1-rear-suspension"],
+      "evidence": "Inferred from published 10.9–11.2 in range; confirm on setup sheet."
+    },
+    {
+      "dim_id": "hex_hub_size",
+      "label": "Wheel hex size",
+      "value": 14.0,
+      "units": "mm",
+      "confidence": "confirmed",
+      "axis": "diameter",
+      "part_ids": ["leaf-wheel-hex"],
+      "evidence": "Published review: 14 mm hex (limits wheel choice vs common 12 mm)."
+    }
+  ],
+  "mate_chain": [
+    {
+      "mate_id": "chassis-to-sideguard",
+      "from_part": "leaf-chassis-plate",
+      "to_part": "l2-side-pods",
+      "mate_type": "coincident",
+      "confidence": "confirmed",
+      "dim_ids": ["chassis_aluminum_width", "overall_width_with_sideguards"],
+      "notes": "Side guards mate to aluminum chassis edges; width delta ≈ sideguard stack."
+    },
+    {
+      "mate_id": "hex-to-wheel",
+      "from_part": "leaf-wheel-hex",
+      "to_part": "leaf-wheel",
+      "mate_type": "axis",
+      "offset": 0.0,
+      "units": "mm",
+      "confidence": "confirmed",
+      "dim_ids": ["hex_hub_size"],
+      "notes": "14 mm hex axis mate — leaf wheel bore must match."
+    },
+    {
+      "mate_id": "front-to-rear-wheelbase",
+      "from_part": "l1-front-suspension",
+      "to_part": "l1-rear-suspension",
+      "mate_type": "offset",
+      "offset": 281.94,
+      "units": "mm",
+      "confidence": "inferred",
+      "dim_ids": ["wheelbase_nominal"],
+      "notes": "Wheelbase offset inferred — replace with setup-sheet confirmed value before leaf fitment claim."
+    }
+  ],
+  "bom_refs": [
+    {
+      "path": "staging/parts-hierarchy.l1l2.json",
+      "tier": "L2",
+      "notes": "Placeholder L1/L2 BOM for DEX410 profile; leaf nodes require confirmed mates."
+    }
+  ],
+  "handoff": {
+    "fusion": {
+      "export_formats": ["step", "stl"],
+      "notes": "Import CadQuery STEP on the Fusion-licensed workstation; refine mates interactively."
+    },
+    "cadquery": {
+      "prefer_node": "mwt1",
+      "notes": "Prefer MWT1 CadQuery venv under AlanTBrain tools/; controller is degraded fallback."
+    },
+    "notes": "Autodesk GUI for v1 is Fusion-only. 3ds Max is a later-phase workstation path — not U6."
+  },
+  "notes": "DEX410-style dimension register template for Composite3DGen U6. Confirmed vs inferred is mandatory. Do not claim leaf fitment from AI reconstruct alone. No secrets / license keys in this file."
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "provider": "tripo",
+  "mode": "live",
+  "job_id": "tripo-recorded-qm1-parts",
+  "status": "succeeded",
+  "consumed": 0.55,
+  "artifacts": {
+    "parts_glb_ref": "recorded/media-refs.json#tripo_parts_glb",
+    "task_type": "multiview_to_model",
+    "generate_parts": true,
+    "model_version": "v2.5-20250123"
+  },
+  "remote_task_id": "fixture-tripo-qm1-parts-2026-10-21",
+  "error": null,
+  "notes": [
+    "RECORDED proof from prior GLM Tripo H3.1 multiview + generate_parts run.",
+    "Reuse in dry-run only — do not re-submit; consumed is historical (not this run).",
+    "Mesh bytes live behind media-refs (Git LFS / external); not inventing dump-truck GLB as truth."
+  ],
+  "meta": {
+    "recorded": true,
+    "subject_id": "glm-qm1",
+    "source_job": "video_deconstruction_2026-10-21",
+    "this_run_consumed": 0.0
+  }
+}

@@ -1,1 +1,76 @@
 # Composite3DGen
+
+Playbook + pipeline for **multi-angle composite 3D generation** with **multi-level exploded hierarchies** (L1/L2 first; leaf BOM schema-ready). Optimized for **cost and quality**, not speed.
+
+Primary local compute: **MWT1** (`ssh mwt1`) — TripoSR drafts, Blender explode/hierarchy/QA, ingest/packs, optional photogrammetry. Paid cloud (Tripo / Hi3D / Rodin / Seedance) only behind an explicit `--spend` gate after local QA fails.
+
+## Status
+
+**U7 (v1 complete)** — QA gates (silhouette overlay + BOM L1/L2/leaf), cost ledger (local `$0` / cloud `consumed`), `--spend` hard-block without QA miss reasons, promote-to-hero + Seedance post-QA policy. Stacks on U6 RC CAD/photogrammetry.
+
+## Quick start
+
+```bash
+# Editable install (Python ≥ 3.10)
+pip install -e ".[dev]"
+
+# Or run without installing via PYTHONPATH / src layout:
+PYTHONPATH=src python -m composite3dgen --help
+```
+
+Smoke:
+
+```bash
+python -m composite3dgen --help
+python -m composite3dgen build-packs path/to/job --executor local
+```
+
+## CLI
+
+| Flag / command | Meaning |
+|----------------|---------|
+| `--spend` | Authorize paid cloud. With `prefer_local`, hard-requires `--qa-miss` (or `manifests/qa_misses.json`). |
+| `--prefer-local` / `--no-prefer-local` | Prefer MWT1/local free stages (default: on). |
+| `build-packs <job_dir>` | U2: ingest → quality → identical `build_packs/{triposr,tripo,hi3d,rodin}/`. |
+| `run [job_dir]` | Packs (unless `--skip-packs`) + routed provider jobs. Live cloud needs `--spend` + QA miss (or `--no-prefer-local`). |
+| `dry-run <job_dir>` | U5 E2E: packs → virtual providers → Blender L1/L2 → checklist. Refuses `--spend`; reuses recorded GLM/Tripo proofs. |
+| `qa [job_dir]` | U7: silhouette + BOM gates + cost ledger + promote-to-hero plan. |
+| `route` | Print cost/quality route plan JSON without executing adapters. |
+| `explode [job_dir]` | U4: Blender Empty hierarchy + explode export + QA stills (MWT1 when capable; dry-run otherwise). |
+| `cad [job_dir]` | U6: CadQuery against dimension register (prefer MWT1; missing binary → `next_steps` dry-run). |
+| `photogrammetry [job_dir]` | U6: COLMAP/Meshroom on MWT1 (dry-run + install next steps when binaries missing). |
+| `doctor` | MWT1 capability matrix (SSH, jobs dir, ffmpeg, Pillow, CUDA, Blender, TripoSR, optional COLMAP). |
+| `doctor --live` | Attempt live SSH probes (LAN controller or mwt1 worker; cloud VMs typically fail closed). |
+
+MWT1 is preferred for ffmpeg ingest / quality / packs / TripoSR / Blender explode when base capabilities pass; controller local is the degraded fallback.
+
+## Playbook
+
+| Doc | Purpose |
+|-----|---------|
+| [docs/playbook/WORKFLOW.md](docs/playbook/WORKFLOW.md) | Stages, gates, spend policy, MWT1 local-first |
+| [docs/playbook/CAPTURE_CHECKLIST.md](docs/playbook/CAPTURE_CHECKLIST.md) | Multi-angle capture requirements |
+| [docs/playbook/COST_QUALITY_MATRIX.md](docs/playbook/COST_QUALITY_MATRIX.md) | Routing: local → TripoSR → cloud promote |
+| [docs/playbook/QA_GATES.md](docs/playbook/QA_GATES.md) | Silhouette / BOM gates, cost ledger, Seedance post-QA |
+| [docs/playbook/BOM_SCHEMA.md](docs/playbook/BOM_SCHEMA.md) | Hierarchy / explode depth (L1/L2/leaf) |
+| [docs/playbook/FUSION_HANDOFF.md](docs/playbook/FUSION_HANDOFF.md) | Fusion workstation handoff (v1 GUI; 3ds Max later) |
+
+## Layout
+
+```
+src/composite3dgen/   # Package (ingest, packs, providers, nodes, blender, qa)
+docs/playbook/        # Operator playbook
+schema/               # JSON schemas (subject, parts.hierarchy, job.provider)
+deploy/mwt1/          # MWT1 install notes (U3b)
+fixtures/             # GLM QM1 + RC DEX410 curated proofs (U5/U6)
+tests/                # Unit / integration tests
+examples/             # Minimal usage examples
+```
+
+## Secrets
+
+**Never commit API keys or credentials.** Load Tripo / Hi3D / Rodin / Seedance secrets from Bitwarden or environment variables on the controller. See [AGENTS.md](AGENTS.md).
+
+## License
+
+Proprietary — MediaWave Technology.

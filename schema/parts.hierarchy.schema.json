@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mediawavetechnology.example/composite3dgen/schema/parts.hierarchy.schema.json",
+  "title": "PartsHierarchy",
+  "description": "Multi-level BOM hierarchy for Composite3DGen explode exports. L1/L2 are first-class ship targets; leaf is schema-supported but quality-gated (not claimed from AI alone).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Parts hierarchy schema version."
+    },
+    "subject_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$",
+      "description": "Subject id matching the job / subject.manifest."
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["L1", "L2", "leaf"],
+      "description": "Deepest claimed BOM tier for this export. Leaf claims require explicit QA (and RC CAD evidence)."
+    },
+    "source": {
+      "type": "string",
+      "enum": ["blender", "staging", "provider", "manual"],
+      "default": "blender",
+      "description": "Where this hierarchy document was produced."
+    },
+    "units": {
+      "type": "string",
+      "enum": ["mm", "cm", "m", "in", "blender"],
+      "default": "blender",
+      "description": "Linear units for explode_offset vectors."
+    },
+    "parts": {
+      "type": "array",
+      "description": "Flat list of BOM nodes. Use parent_id for tree links (Empty parents in Blender).",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/partNode" }
+    },
+    "explode": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "factor": {
+          "type": "number",
+          "minimum": 0,
+          "default": 1.0,
+          "description": "Global scale applied to per-node explode_offset."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["offset", "radial", "none"],
+          "default": "offset"
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "meshes": {
+      "type": "array",
+      "description": "Mesh→BOM map: every exported mesh object assigned to a part_id.",
+      "items": { "$ref": "#/$defs/meshBinding" }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "glb": {
+          "type": "string",
+          "description": "Relative path to hierarchy GLB (Empty parents)."
+        },
+        "parts_json": {
+          "type": "string",
+          "description": "Relative path to this document when written beside the GLB."
+        },
+        "verification": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Relative paths to QA stills (e.g. local-exploded-l1.png)."
+        }
+      }
+    },
+    "notes": { "type": "string" }
+  },
+  "required": ["schema_version", "subject_id", "tier", "parts"],
+  "$defs": {
+    "vec3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "number" },
+      "description": "XYZ triple."
+    },
+    "partNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "part_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$",
+          "description": "Stable BOM id (Empty object name stem in Blender)."
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable name; separate from part_id."
+        },
+        "level": {
+          "type": "string",
+          "enum": ["L1", "L2", "leaf"],
+          "description": "Node depth tier. L1 roots, L2 under L1, leaf under L2 (or L1 when shallow)."
+        },
+        "parent_id": {
+          "type": ["string", "null"],
+          "description": "Parent part_id; null for L1 roots. Must reference another part when non-null."
+        },
+        "mesh_names": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true,
+          "default": [],
+          "description": "Blender mesh object names owned by this node (Empty children)."
+        },
+        "explode_offset": {
+          "$ref": "#/$defs/vec3",
+          "description": "Local explode translation before global factor."
+        },
+        "provider_part_ref": {
+          "type": "string",
+          "description": "Optional upstream provider part / group name (Tripo/Hi3D/BANG)."
+        },
+        "notes": { "type": "string" }
+      },
+      "required": ["part_id", "label", "level"]
+    },
+    "meshBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mesh_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Blender mesh object name."
+        },
+        "part_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Owning BOM part_id."
+        }
+      },
+      "required": ["mesh_name", "part_id"]
+    }
+  }
+}
