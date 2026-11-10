@@ -48,3 +48,14 @@ def test_cad_and_photogrammetry_subparsers() -> None:
     )
     assert photo.command == "photogrammetry"
     assert photo.tool == "colmap"
+
+
+def test_qa_subparser_present() -> None:
+    from composite3dgen.cli import build_parser
+
+    args = build_parser().parse_args(
+        ["qa", "/tmp/job", "--bom-tier", "L2", "--json"]
+    )
+    assert args.command == "qa"
+    assert args.bom_tier == "L2"
+    assert args.json is True

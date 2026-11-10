@@ -101,17 +101,47 @@ async def _run_decision(
     if decision.stage == "seedance":
         from composite3dgen.providers.base import new_job_id
 
+        # U7: Seedance is post-QA presentation only — never geometry.
+        # Live mode still records dry-run unless QA report says passed.
+        qa_report = Path(job_dir) / "manifests" / "qa_gate_report.json"
+        qa_passed = False
+        if qa_report.is_file():
+            try:
+                qa_doc = json.loads(qa_report.read_text(encoding="utf-8"))
+                qa_passed = bool(qa_doc.get("passed"))
+            except (OSError, json.JSONDecodeError):
+                qa_passed = False
+
+        mode = "dry-run"
+        status = JobStatus.DRY_RUN
+        notes = [
+            "Seedance is post-QA presentation only — never a geometry source.",
+            *decision.notes,
+        ]
+        if decision.mode == "live" and not qa_passed:
+            status = JobStatus.BLOCKED
+            notes.append(
+                "Live Seedance blocked: QA has not passed "
+                "(run `composite3dgen qa` first). Recording blocked virtual job."
+            )
+        elif decision.mode == "live" and qa_passed:
+            # Still no live HTTP in-repo (no Seedance client) — dry-run record
+            # with authorization note. Prevents accidental paid calls in tests.
+            notes.append(
+                "QA passed + --spend: Seedance presentation authorized; "
+                "no in-repo live HTTP client (record only)."
+            )
+        else:
+            notes.append("Dry-run presentation record (no live HTTP).")
+
         result = ProviderJobResult(
             provider="seedance",
             job_id=new_job_id("seedance"),
-            status=JobStatus.DRY_RUN,
-            mode="dry-run",
+            status=status,
+            mode=mode,
             consumed=0.0,
-            notes=[
-                "Seedance is post-QA presentation only — not invoked in U3 reconstruct.",
-                *decision.notes,
-            ],
-            meta={"stage": decision.stage},
+            notes=notes,
+            meta={"stage": decision.stage, "qa_passed": qa_passed},
         )
         out = Path(job_dir) / "out" / "seedance"
         out.mkdir(parents=True, exist_ok=True)
@@ -183,6 +213,25 @@ async def run_plan_async(
         "jobs": [r.to_record() for r in results],
     }
     ledger_path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+
+    # U7: also refresh cost_ledger.json with local $0 stages + cloud consumed.
+    try:
+        from composite3dgen.qa.ledger import build_ledger_from_provider_jobs, write_ledger
+
+        cost = build_ledger_from_provider_jobs(
+            [r.to_record() for r in results],
+            subject_id=subject_id,
+            spend_authorized=plan.spend,
+            qa_miss_kinds=[
+                m.kind for d in plan.decisions for m in d.qa_misses
+            ],
+            include_local_pipeline=True,
+            local_stages_present=None,
+        )
+        write_ledger(ledger_dir / "cost_ledger.json", cost)
+    except Exception:  # noqa: BLE001 — provider run must not fail on ledger polish
+        pass
+
     return ProviderRunResult(plan=plan, results=results, ledger_path=ledger_path)
 
 

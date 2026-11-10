@@ -38,11 +38,24 @@ Runs packs → virtual TripoSR/Tripo jobs → Blender L1/L2 from
 Reuses `recorded/tripo/*` proofs; large GLBs stay as external/LFS refs.
 Refuses `--spend` (zero new cloud spend).
 
+## QA gates + cost ledger (U7)
+
+```bash
+# BOM gate on QM1 staging hierarchy (skip silhouette if no stills)
+python -m composite3dgen qa fixtures/glm-qm1 --skip-silhouette --json
+
+# Promote-to-hero policy (Seedance post-QA only)
+python -m composite3dgen qa /dev/null --policy
+
+# --spend hard-blocked without QA miss under prefer_local:
+# python -m composite3dgen --spend run ./job --qa-miss silhouette --stage tripo
+```
+
 ## Global flags
 
 ```bash
 python -m composite3dgen --help
 python -m composite3dgen doctor          # capability matrix (no live SSH)
 # python -m composite3dgen doctor --live  # LAN / mwt1 worker only
-# --spend authorizes paid cloud later (U3+); ignored for build-packs / refused by dry-run
+# --spend requires QA miss reasons when prefer_local (U7); ignored for build-packs / refused by dry-run
 ```

@@ -37,8 +37,9 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Authorize paid cloud provider calls (Tripo / Hi3D / Rodin / "
             "Seedance). Without this flag, only dry-run and local/MWT1 "
-            "stages run. Live cloud still needs QA miss reasons when "
-            "prefer_local is on (full ledger in U7)."
+            "stages run. With --spend and prefer_local, hard-requires "
+            "--qa-miss KIND (or load manifests/qa_misses.json); use "
+            "--no-prefer-local to override. Seedance remains post-QA only."
         ),
     )
     parser.add_argument(
@@ -366,6 +367,68 @@ def build_parser() -> argparse.ArgumentParser:
         help="Print machine-readable summary JSON",
     )
 
+    qa = sub.add_parser(
+        "qa",
+        help=(
+            "U7: silhouette overlay + BOM completeness gates + cost ledger "
+            "+ promote-to-hero plan (mockable offline; MWT1 renders when present)"
+        ),
+    )
+    qa.add_argument(
+        "job_dir",
+        type=Path,
+        help="Job directory with parts.json / verification stills",
+    )
+    qa.add_argument(
+        "--hierarchy",
+        type=Path,
+        default=None,
+        help="Parts hierarchy JSON (default: out/blender/parts.json or staging)",
+    )
+    qa.add_argument(
+        "--bom-tier",
+        choices=("L1", "L2", "leaf"),
+        default="L2",
+        help="Required BOM completeness tier (default: L2)",
+    )
+    qa.add_argument(
+        "--skip-silhouette",
+        action="store_true",
+        help="Skip silhouette overlay gate",
+    )
+    qa.add_argument(
+        "--skip-bom",
+        action="store_true",
+        help="Skip BOM completeness gate",
+    )
+    qa.add_argument(
+        "--iou-threshold",
+        type=float,
+        default=0.55,
+        help="Minimum silhouette IoU (default: 0.55)",
+    )
+    qa.add_argument(
+        "--coverage-threshold",
+        type=float,
+        default=0.70,
+        help="Minimum silhouette coverage vs reference (default: 0.70)",
+    )
+    qa.add_argument(
+        "--require-cad-for-leaf",
+        action="store_true",
+        help="Fail leaf BOM claims without CAD/register allowance",
+    )
+    qa.add_argument(
+        "--policy",
+        action="store_true",
+        help="Print promote-to-hero policy JSON and exit",
+    )
+    qa.add_argument(
+        "--json",
+        action="store_true",
+        help="Print machine-readable QA report JSON",
+    )
+
     return parser
 
 
@@ -462,19 +525,57 @@ def _resolve_mwt1_triposr_transport():
     return None
 
 
+def _resolve_qa_misses(args: argparse.Namespace):
+    """Parse --qa-miss flags; optionally load manifests/qa_misses.json."""
+    misses = _parse_qa_misses(args.qa_miss or [])
+    job_dir = getattr(args, "job_dir", None)
+    if job_dir and not misses:
+        from composite3dgen.qa.gates import load_misses_file
+
+        path = Path(job_dir) / "manifests" / "qa_misses.json"
+        if path.is_file():
+            misses = load_misses_file(path)
+    return misses
+
+
+def _enforce_spend_gate(args: argparse.Namespace, misses) -> int | None:
+    """Hard-block --spend without QA miss reasons under prefer_local (U7).
+
+    Returns an exit code when blocked; None when allowed to continue.
+    """
+    if not args.spend:
+        return None
+    from composite3dgen.qa.promote import assert_spend_authorized
+
+    try:
+        assert_spend_authorized(
+            spend=True,
+            prefer_local=bool(args.prefer_local),
+            qa_misses=misses,
+        )
+    except PermissionError as exc:
+        print(f"composite3dgen: error: {exc}", file=sys.stderr)
+        return 2
+    return None
+
+
 def _run_providers(args: argparse.Namespace, *, subject_id: str | None = None) -> int:
     from composite3dgen.providers.router import plan_routes
     from composite3dgen.providers.runner import collect_pack_inputs, run_plan
 
     try:
-        misses = _parse_qa_misses(args.qa_miss or [])
+        misses = _resolve_qa_misses(args)
     except ValueError as exc:
         print(f"composite3dgen: error: {exc}", file=sys.stderr)
         return 1
 
+    blocked = _enforce_spend_gate(args, misses)
+    if blocked is not None:
+        return blocked
+
     stages = list(args.stage) if args.stage else None
-    # Without --spend, cloud stages are dry-run; with --spend but prefer_local
-    # and no misses, router keeps dry-run + block_reason (no live HTTP).
+    # Without --spend, cloud stages are dry-run; with --spend + justifying
+    # QA miss (or --no-prefer-local), live mode is allowed by the router.
     plan = plan_routes(
         prefer_local=bool(args.prefer_local),
         spend=bool(args.spend),
@@ -572,6 +673,9 @@ def _cmd_route(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(f"composite3dgen: error: {exc}", file=sys.stderr)
         return 1
+    blocked = _enforce_spend_gate(args, misses)
+    if blocked is not None:
+        return blocked
     stages = list(args.stage) if args.stage else None
     plan = plan_routes(
         prefer_local=bool(args.prefer_local),
@@ -581,6 +685,71 @@ def _cmd_route(args: argparse.Namespace) -> int:
     )
     print(json.dumps(plan.as_dict(), indent=2))
     return 0
+
+
+def _cmd_qa(args: argparse.Namespace) -> int:
+    from composite3dgen.qa.gates import run_qa_gates
+    from composite3dgen.qa.promote import policy_summary
+
+    if args.policy:
+        print(json.dumps(policy_summary(), indent=2))
+        return 0
+
+    result = run_qa_gates(
+        Path(args.job_dir),
+        hierarchy_path=args.hierarchy,
+        required_bom_tier=args.bom_tier,  # type: ignore[arg-type]
+        skip_silhouette=bool(args.skip_silhouette),
+        skip_bom=bool(args.skip_bom),
+        iou_threshold=float(args.iou_threshold),
+        coverage_threshold=float(args.coverage_threshold),
+        require_cad_for_leaf=bool(args.require_cad_for_leaf),
+        spend=bool(args.spend),
+        prefer_local=bool(args.prefer_local),
+        write=True,
+    )
+    summary = result.as_dict()
+    if args.json:
+        print(json.dumps(summary, indent=2))
+    else:
+        print(
+            f"qa ok={result.passed}: subject={result.subject_id} "
+            f"misses={len(result.misses)}"
+        )
+        if result.silhouette is not None:
+            print(
+                f"  silhouette: passed={result.silhouette.passed} "
+                f"axes={len(result.silhouette.scores)} "
+                f"failed={result.silhouette.failed_axes}"
+            )
+        if result.bom is not None:
+            print(
+                f"  bom: passed={result.bom.passed} "
+                f"required={result.bom.required_tier} "
+                f"claimed={result.bom.claimed_tier} "
+                f"counts={dict(result.bom.counts)}"
+            )
+        for miss in result.misses:
+            print(f"  miss: {miss.kind}" + (f" — {miss.detail}" if miss.detail else ""))
+        for decision in result.promote[:6]:
+            print(
+                f"  promote: {decision.action} allowed={decision.allowed} "
+                f"— {decision.reason}"
+            )
+        if result.ledger is not None:
+            totals = result.ledger.as_dict()["totals"]
+            print(
+                f"  ledger: local=${totals['local']:.2f} "
+                f"cloud=${totals['cloud']:.2f} "
+                f"entries={len(result.ledger.entries)}"
+            )
+        if result.report_path:
+            print(f"  report: {result.report_path}")
+        if result.ledger_path:
+            print(f"  cost_ledger: {result.ledger_path}")
+        for note in result.notes[:6]:
+            print(f"  note: {note}")
+    return 0 if result.passed else 1
 
 
 def _cmd_dry_run(args: argparse.Namespace) -> int:
@@ -793,6 +962,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "photogrammetry":
         return _cmd_photogrammetry(args)
+
+    if args.command == "qa":
+        return _cmd_qa(args)
 
     if args.command == "run":
         if not args.job_dir:

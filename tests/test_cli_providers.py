@@ -44,7 +44,8 @@ def test_run_dry_run_records_virtual_jobs(cardinal_job: Path, capsys) -> None:
     assert all(j["status"] == "dry_run" for j in doc["jobs"])
 
 
-def test_spend_without_qa_miss_does_not_live(cardinal_job: Path) -> None:
+def test_spend_without_qa_miss_hard_blocks(cardinal_job: Path) -> None:
+    """U7: --spend under prefer_local without QA miss is a hard error (exit 2)."""
     code = main(
         [
             "--spend",
@@ -58,11 +59,12 @@ def test_spend_without_qa_miss_does_not_live(cardinal_job: Path) -> None:
             "--json",
         ]
     )
-    assert code == 0
-    doc = json.loads((cardinal_job / "manifests" / "provider_jobs.json").read_text())
-    assert doc["spend"] is True
-    assert doc["jobs"][0]["mode"] == "dry-run"
-    assert doc["jobs"][0]["status"] == "dry_run"
+    assert code == 2
+    # No live provider jobs should have been written for this blocked run.
+    ledger = cardinal_job / "manifests" / "provider_jobs.json"
+    if ledger.is_file():
+        doc = json.loads(ledger.read_text(encoding="utf-8"))
+        assert all(j.get("mode") != "live" for j in doc.get("jobs") or [])
 
 
 def test_spend_with_qa_miss_attempts_live_but_needs_secret(

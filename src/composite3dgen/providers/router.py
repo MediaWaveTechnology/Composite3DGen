@@ -1,11 +1,13 @@
 """Cost × quality router — local first; cloud only after QA miss or --spend rules.
 
-Rules (from playbook COST_QUALITY_MATRIX):
+Rules (from playbook COST_QUALITY_MATRIX / U7):
 1. ``prefer_local=true`` (default) — attempt MWT1/local free stages before cloud.
 2. No ``--spend`` — refuse live Tripo / Hi3D / Rodin / Seedance; dry-run OK.
-3. With ``--spend`` — still prefer local unless QA miss reasons **or**
-   ``prefer_local=False`` (``--no-prefer-local``) justify cloud live mode.
+3. With ``--spend`` — CLI hard-blocks under prefer_local without QA miss reasons
+   (``assert_spend_authorized``). Router still demotes unjustified live to
+   dry-run + ``block_reason`` as a belt-and-suspenders guard.
 4. TripoSR is single-image draft — not multi-view proof.
+5. Seedance is post-QA presentation only (never geometry).
 """
 
 from __future__ import annotations

@@ -6,7 +6,7 @@ Primary local compute: **MWT1** (`ssh mwt1`) — TripoSR drafts, Blender explode
 
 ## Status
 
-**U6** — RC domain profile (DEX410 dimension register) + CadQuery adapter (prefer MWT1; missing-binary dry-run with structured next steps) + Fusion handoff docs (not 3ds Max) + photogrammetry adapter on MWT1 (COLMAP/Meshroom; dry-run until installed). U5 GLM dry-run E2E remains. Full QA ledger / spend hard-block: U7.
+**U7 (v1 complete)** — QA gates (silhouette overlay + BOM L1/L2/leaf), cost ledger (local `$0` / cloud `consumed`), `--spend` hard-block without QA miss reasons, promote-to-hero + Seedance post-QA policy. Stacks on U6 RC CAD/photogrammetry.
 
 ## Quick start
 
@@ -29,11 +29,12 @@ python -m composite3dgen build-packs path/to/job --executor local
 
 | Flag / command | Meaning |
 |----------------|---------|
-| `--spend` | Authorize paid cloud provider calls. Default: dry-run / local-only. |
+| `--spend` | Authorize paid cloud. With `prefer_local`, hard-requires `--qa-miss` (or `manifests/qa_misses.json`). |
 | `--prefer-local` / `--no-prefer-local` | Prefer MWT1/local free stages (default: on). |
 | `build-packs <job_dir>` | U2: ingest → quality → identical `build_packs/{triposr,tripo,hi3d,rodin}/`. |
-| `run [job_dir]` | Packs (unless `--skip-packs`) + routed provider jobs. Dry-run records virtual jobs; live cloud needs `--spend` + QA miss (or `--no-prefer-local`). |
+| `run [job_dir]` | Packs (unless `--skip-packs`) + routed provider jobs. Live cloud needs `--spend` + QA miss (or `--no-prefer-local`). |
 | `dry-run <job_dir>` | U5 E2E: packs → virtual providers → Blender L1/L2 → checklist. Refuses `--spend`; reuses recorded GLM/Tripo proofs. |
+| `qa [job_dir]` | U7: silhouette + BOM gates + cost ledger + promote-to-hero plan. |
 | `route` | Print cost/quality route plan JSON without executing adapters. |
 | `explode [job_dir]` | U4: Blender Empty hierarchy + explode export + QA stills (MWT1 when capable; dry-run otherwise). |
 | `cad [job_dir]` | U6: CadQuery against dimension register (prefer MWT1; missing binary → `next_steps` dry-run). |
@@ -50,6 +51,7 @@ MWT1 is preferred for ffmpeg ingest / quality / packs / TripoSR / Blender explod
 | [docs/playbook/WORKFLOW.md](docs/playbook/WORKFLOW.md) | Stages, gates, spend policy, MWT1 local-first |
 | [docs/playbook/CAPTURE_CHECKLIST.md](docs/playbook/CAPTURE_CHECKLIST.md) | Multi-angle capture requirements |
 | [docs/playbook/COST_QUALITY_MATRIX.md](docs/playbook/COST_QUALITY_MATRIX.md) | Routing: local → TripoSR → cloud promote |
+| [docs/playbook/QA_GATES.md](docs/playbook/QA_GATES.md) | Silhouette / BOM gates, cost ledger, Seedance post-QA |
 | [docs/playbook/BOM_SCHEMA.md](docs/playbook/BOM_SCHEMA.md) | Hierarchy / explode depth (L1/L2/leaf) |
 | [docs/playbook/FUSION_HANDOFF.md](docs/playbook/FUSION_HANDOFF.md) | Fusion workstation handoff (v1 GUI; 3ds Max later) |
 

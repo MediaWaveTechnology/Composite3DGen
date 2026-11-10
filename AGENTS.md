@@ -9,8 +9,8 @@ Composite3DGen is the **playbook + pipeline** home for multi-angle → reconstru
 ## Non-negotiables
 
 1. **No secrets in git.** API keys, tokens, SSH passwords, Bitwarden session material, and `.env` files with live credentials must never be committed. Use Bitwarden CLI / agent secrets / environment variables on the **controller** only.
-2. **`--spend` gate.** Paid cloud calls (Tripo API, Hi3D, Rodin/BANG, Seedance) require an explicit `--spend` flag. Default path is dry-run + local/MWT1 stages.
-3. **`prefer_local` default.** Prefer MWT1 for ingest, packs, TripoSR, photogrammetry, Blender explode/QA. Escalate to cloud only when QA says local draft is insufficient.
+2. **`--spend` gate.** Paid cloud calls (Tripo API, Hi3D, Rodin/BANG, Seedance) require an explicit `--spend` flag **and** (under `prefer_local`) recorded QA miss reasons (`--qa-miss` / `qa` report). Default path is dry-run + local/MWT1 stages.
+3. **`prefer_local` default.** Prefer MWT1 for ingest, packs, TripoSR, photogrammetry, Blender explode/QA. Escalate to cloud only when QA says local draft is insufficient. Seedance is post-QA presentation only.
 4. **Do not port** GLM marketing/DAM site content or scorpion assets into this repo. Port **patterns** (manifests, pack layout, Tripo client shapes) only.
 5. **TripoSR ≠ Tripo cloud.** TripoSR is local single-image draft reconstruct on MWT1. Tripo H3.1 multiview + `generate_parts` is the paid multi-view parts path.
 
@@ -46,15 +46,13 @@ If MWT1 is unreachable, controller may run lightweight stages in **degraded mode
 | U3b | MWT1 node contract + health checks |
 | U4 | BOM schema + Blender explode/QA on MWT1 |
 | U5 | GLM fixture intake + dry-run E2E |
-| U6 | RC CAD + photogrammetry on MWT1 (this milestone) |
-| U7 | QA gates + cost ledger |
+| U6 | RC CAD + photogrammetry on MWT1 |
+| U7 | QA gates + cost ledger + promote-to-hero (this milestone; last v1 unit) |
 
-U6 ships `fixtures/rc-dex410/` (dimension register + mate-chain), CadQuery
-adapter (prefer MWT1; missing-binary dry-run with structured `next_steps`),
-Fusion handoff docs (**not** 3ds Max — later phase), and photogrammetry
-adapter (COLMAP/Meshroom on MWT1; dry-run until installed — see
-`deploy/mwt1/photogrammetry.md`). Do not invent COLMAP paths; probe found
-neither tool. No secrets / live paid cloud. U7 is hooks only beyond this unit.
+U7 ships silhouette overlay + BOM completeness gates (`composite3dgen qa`),
+`manifests/cost_ledger.json` (local stages `$0`; cloud via API `consumed`),
+hard-block of `--spend` without QA miss reasons, and promote-to-hero /
+Seedance post-QA policy docs. No secrets / live paid cloud in tests.
 
 ## Testing
 
@@ -69,6 +67,8 @@ python -m composite3dgen explode fixtures/u2-sample --executor local --json
 python -m composite3dgen dry-run fixtures/glm-qm1 --executor local --json
 python -m composite3dgen cad fixtures/rc-dex410 --executor local --json
 python -m composite3dgen photogrammetry fixtures/rc-dex410 --executor local --json
+python -m composite3dgen qa fixtures/glm-qm1 --skip-silhouette --json
+python -m composite3dgen qa /dev/null --policy
 python -m composite3dgen doctor
 # LAN / mwt1 worker only:
 # python -m composite3dgen doctor --live

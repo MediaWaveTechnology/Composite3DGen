@@ -75,8 +75,9 @@ MWT1 prefers probe-verified `/opt/homebrew/bin/blender` (then App bundle). Witho
 ## QA expectations (U7)
 
 - L1/L2 completeness: every mesh assigned under the hierarchy; no anonymous dump roots.
-- Leaf claims require explicit tier flag + (for RC) dimension-register evidence.
-- Cost ledger marks Blender/local stages `$0`.
+- Leaf claims require explicit tier flag + (for RC) dimension-register evidence (`--require-cad-for-leaf`).
+- Cost ledger marks Blender/local stages `$0` (`manifests/cost_ledger.json`).
+- CLI: `composite3dgen qa` — see [QA_GATES.md](QA_GATES.md).
 
 ## RC dimension register (U6)
 
@@ -88,6 +89,7 @@ MWT1 prefers probe-verified `/opt/homebrew/bin/blender` (then App bundle). Witho
 ## Related
 
 - [WORKFLOW.md](WORKFLOW.md) — BOM depth gate
+- [QA_GATES.md](QA_GATES.md) — silhouette + BOM gates + ledger
 - [COST_QUALITY_MATRIX.md](COST_QUALITY_MATRIX.md) — when to promote providers vs CAD
 - [FUSION_HANDOFF.md](FUSION_HANDOFF.md) — Fusion workstation path
 - `deploy/mwt1/README.md` — verified Blender Homebrew / App paths

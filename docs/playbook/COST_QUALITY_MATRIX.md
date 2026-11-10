@@ -20,11 +20,12 @@ Default: climb the ladder from free local stages; stop when QA passes. Paid clou
 
 1. **`prefer_local=true` (default)** — attempt MWT1-capable stages before cloud.
 2. **No `--spend`** — refuse live Tripo / Hi3D / Rodin / Seedance HTTP; dry-run + fixtures OK.
-3. **With `--spend`** — still prefer local unless QA miss reasons (or `--no-prefer-local`) justify cloud.
+3. **With `--spend`** — **hard-blocked** under `prefer_local` unless QA miss reasons are recorded (`--qa-miss` or `manifests/qa_misses.json`). `--no-prefer-local --spend` is the explicit override.
 4. **TripoSR role boundary** — single-image (or per-view independent) draft. **Not** true multi-view fusion. Do not treat TripoSR success as proof of unseen sides.
 5. **Reuse before re-spend** — ingest existing GLM Tripo generations / staging assembly fixtures when available (U5).
+6. **Seedance** — presentation only after QA **pass**; never geometry.
 
-U3 CLI: `composite3dgen route` prints the plan; `composite3dgen run` records virtual jobs under `manifests/provider_jobs.json` when dry-run. Full silhouette/BOM ledger that *requires* QA miss text before `--spend` hard-blocks is **U7**; U3 already demotes unjustified live cloud to dry-run + `block_reason`.
+CLI: `composite3dgen qa` runs silhouette + BOM gates and writes the cost ledger; `route` / `run` consume miss reasons. Router still demotes unjustified live cloud to dry-run + `block_reason` as belt-and-suspenders. Full policy: [QA_GATES.md](QA_GATES.md).
 
 ## Quality tiers
 
@@ -60,6 +61,7 @@ capture OK?
 ## Related
 
 - [WORKFLOW.md](WORKFLOW.md) — stages and `--spend` policy
+- [QA_GATES.md](QA_GATES.md) — silhouette / BOM / ledger / promote-to-hero / Seedance
 - [BOM_SCHEMA.md](BOM_SCHEMA.md) — L1/L2 vs leaf
 - [FUSION_HANDOFF.md](FUSION_HANDOFF.md) — Fusion handoff
 - [`deploy/mwt1/README.md`](../../deploy/mwt1/README.md) — install / verify-on-LAN facts

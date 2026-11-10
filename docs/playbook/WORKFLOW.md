@@ -25,16 +25,16 @@ Orchestration, manifests, router decisions, and Bitwarden secrets stay on the **
 
 1. **Capture gate** — packs must include canonical front (and expected cardinals). See [CAPTURE_CHECKLIST.md](CAPTURE_CHECKLIST.md).
 2. **Local-first gate** — `prefer_local` defaults on. Cloud reconstruct only after local TripoSR (and photogrammetry when applicable) miss QA, or operator overrides with `--no-prefer-local` **and** `--spend`.
-3. **`--spend` gate** — without `--spend`, adapters dry-run or refuse live paid HTTP. With `--spend`, U7 will additionally require recorded QA miss reasons before authorizing cloud.
+3. **`--spend` gate (U7)** — without `--spend`, adapters dry-run or refuse live paid HTTP. With `--spend` under `prefer_local`, **hard-requires** recorded QA miss reasons (`--qa-miss` or `manifests/qa_misses.json` from `composite3dgen qa`).
 4. **BOM depth gate** — ship L1/L2 explode first; leaf tier is schema-ready but quality-gated. See [BOM_SCHEMA.md](BOM_SCHEMA.md).
-5. **Presentation gate** — Seedance only after QA pass; never a geometry source.
+5. **Presentation gate** — Seedance only after QA pass; never a geometry source. See [QA_GATES.md](QA_GATES.md).
 
 ## Spend policy
 
 - **Default:** dry-run + recorded fixtures/proofs; local MWT1 stages only.
-- **Authorize spend:** pass `--spend` on the CLI (and later: provide QA miss rationale).
+- **Authorize spend:** pass `--spend` **and** QA miss rationale (`--qa-miss` / prior `qa` report), or `--no-prefer-local --spend`.
 - **Secrets:** Bitwarden / env on controller only — never commit keys (see root `AGENTS.md`).
-- **Ledger (U7):** local stages marked `$0`; cloud via API `consumed` fields.
+- **Ledger (U7):** `manifests/cost_ledger.json` — local stages `$0`; cloud via API `consumed`.
 
 Approximate cloud reference (order-of-magnitude; verify live pricing):
 
@@ -99,11 +99,24 @@ python -m composite3dgen photogrammetry path/to/job --executor local
 
 CadQuery prefer MWT1; missing CadQuery/COLMAP/Meshroom → dry-run with structured
 `next_steps` (see `deploy/mwt1/photogrammetry.md`, [FUSION_HANDOFF.md](FUSION_HANDOFF.md)).
-3ds Max is later-phase — not invoked here. U7 QA ledger remains separate.
+3ds Max is later-phase — not invoked here.
+
+## QA gates + cost ledger (U7)
+
+```bash
+python -m composite3dgen qa path/to/job --bom-tier L2
+python -m composite3dgen --spend run path/to/job --qa-miss silhouette --stage tripo
+```
+
+Silhouette overlay + BOM completeness (L1/L2/leaf) from MWT1 renders when
+present (mockable offline). Failing coverage fails the gate. Cost ledger
+includes zero-cost local pipeline stages. Seedance is post-QA presentation
+only — see [QA_GATES.md](QA_GATES.md).
 
 ## Related
 
 - [COST_QUALITY_MATRIX.md](COST_QUALITY_MATRIX.md) — routing ladder
 - [CAPTURE_CHECKLIST.md](CAPTURE_CHECKLIST.md) — input quality
 - [BOM_SCHEMA.md](BOM_SCHEMA.md) — hierarchy depth
+- [QA_GATES.md](QA_GATES.md) — silhouette / BOM / ledger / promote-to-hero
 - [FUSION_HANDOFF.md](FUSION_HANDOFF.md) — Fusion handoff (v1 GUI)
