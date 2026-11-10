@@ -1,0 +1,17 @@
+# Example launchd / oneshot shape for documenting a pinned TripoSR checkout on MWT1.
+# Jobs are driven over SSH from the controller — this is not a long-running daemon.
+# Never embed API keys or Hugging Face tokens here.
+#
+# Prefer AlanTBrain (not home) for vendor + job staging:
+#   /Volumes/AlanTBrain/composite3dgen/vendor/TripoSR
+#   /Volumes/AlanTBrain/composite3dgen/jobs
+#
+# Pin: 107cefdc244c39106fa830359024f6a2f1c78871
+# Note: MWT1 is Apple M4 Metal — TripoSR CUDA is a separate install issue.
+# Blender explode/QA uses Homebrew Blender and does not need this unit.
+
+# WorkingDirectory=/Volumes/AlanTBrain/composite3dgen/vendor/TripoSR
+# ExecStart=/Volumes/AlanTBrain/composite3dgen/vendor/TripoSR/.venv/bin/python run.py --help
+# Real reconstruct:
+#   python run.py /path/to/input.png --output-dir /Volumes/AlanTBrain/composite3dgen/jobs/.../out \
+#     --model-save-format glb

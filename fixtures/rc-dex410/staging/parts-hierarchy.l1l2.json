@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0.0",
+  "subject_id": "rc-dex410",
+  "tier": "leaf",
+  "source": "staging",
+  "units": "mm",
+  "parts": [
+    {
+      "part_id": "l1-chassis",
+      "label": "Chassis assembly",
+      "level": "L1",
+      "parent_id": null,
+      "mesh_names": [],
+      "explode_offset": [0, 0, 0]
+    },
+    {
+      "part_id": "l1-front-suspension",
+      "label": "Front suspension",
+      "level": "L1",
+      "parent_id": null,
+      "mesh_names": [],
+      "explode_offset": [0, 80, 0]
+    },
+    {
+      "part_id": "l1-rear-suspension",
+      "label": "Rear suspension",
+      "level": "L1",
+      "parent_id": null,
+      "mesh_names": [],
+      "explode_offset": [0, -80, 0]
+    },
+    {
+      "part_id": "l2-side-pods",
+      "label": "Side pods / guards",
+      "level": "L2",
+      "parent_id": "l1-chassis",
+      "mesh_names": [],
+      "explode_offset": [40, 0, 0]
+    },
+    {
+      "part_id": "leaf-chassis-plate",
+      "label": "Aluminum chassis plate",
+      "level": "leaf",
+      "parent_id": "l1-chassis",
+      "mesh_names": [],
+      "explode_offset": [0, 0, -10],
+      "notes": "Leaf node present for mate-chain refs; tier claim stays L2 until CAD QA."
+    },
+    {
+      "part_id": "leaf-wheel-hex",
+      "label": "Wheel hex (14 mm)",
+      "level": "leaf",
+      "parent_id": "l1-front-suspension",
+      "mesh_names": [],
+      "explode_offset": [60, 40, 0]
+    },
+    {
+      "part_id": "leaf-wheel",
+      "label": "Wheel",
+      "level": "leaf",
+      "parent_id": "l1-front-suspension",
+      "mesh_names": [],
+      "explode_offset": [90, 40, 0]
+    }
+  ],
+  "explode": {
+    "factor": 1.0,
+    "mode": "offset",
+    "notes": "Staging only — not a Blender-verified export."
+  },
+  "notes": "Schema includes leaf nodes so mate-chain part_ids resolve. Leaf fitment claims still require CadQuery + Fusion + confirmed dimension-register evidence — not AI reconstruct alone."
+}

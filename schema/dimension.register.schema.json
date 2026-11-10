@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mediawavetechnology.example/composite3dgen/schema/dimension.register.schema.json",
+  "title": "DimensionRegister",
+  "description": "DEX410-style dimension register for RC leaf fitment. Distinguishes confirmed vs inferred values and records mate-chain links to BOM part_ids. CadQuery / Fusion consume this; AI reconstruct alone cannot claim leaf fitment.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Dimension register schema version."
+    },
+    "subject_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$",
+      "description": "Subject id matching subject.manifest / parts.hierarchy."
+    },
+    "domain": {
+      "type": "string",
+      "enum": ["rc", "glm", "generic"],
+      "default": "rc",
+      "description": "Domain profile; RC is the primary consumer of mate-chain fitment."
+    },
+    "units": {
+      "type": "string",
+      "enum": ["mm", "cm", "m", "in"],
+      "default": "mm",
+      "description": "Default linear units for entries that omit per-row units."
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Named domain profile (e.g. dex410) — template family, not a secret."
+    },
+    "envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Overall vehicle/machine envelope used for sanity checks.",
+      "properties": {
+        "length": { "$ref": "#/$defs/dimensionValue" },
+        "width": { "$ref": "#/$defs/dimensionValue" },
+        "height": { "$ref": "#/$defs/dimensionValue" },
+        "wheelbase": { "$ref": "#/$defs/dimensionValue" },
+        "notes": { "type": "string" }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "description": "Named dimensions. Every row must declare confidence (confirmed|inferred).",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/dimensionEntry" }
+    },
+    "mate_chain": {
+      "type": "array",
+      "description": "Ordered mate relationships between BOM parts for leaf fitment.",
+      "items": { "$ref": "#/$defs/mateLink" },
+      "default": []
+    },
+    "bom_refs": {
+      "type": "array",
+      "description": "Optional pointers to parts.hierarchy / staging BOM documents.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "tier": { "type": "string", "enum": ["L1", "L2", "leaf"] },
+          "notes": { "type": "string" }
+        },
+        "required": ["path"]
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "CAD handoff targets. v1 Autodesk GUI is Fusion-only; 3ds Max is later-phase.",
+      "properties": {
+        "fusion": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "export_formats": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["step", "f3d", "stl", "obj", "iges"]
+              },
+              "uniqueItems": true,
+              "default": ["step", "stl"]
+            },
+            "notes": { "type": "string" }
+          }
+        },
+        "cadquery": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "script": { "type": "string", "minLength": 1 },
+            "prefer_node": {
+              "type": "string",
+              "enum": ["mwt1", "controller", "either"],
+              "default": "mwt1"
+            },
+            "notes": { "type": "string" }
+          }
+        },
+        "notes": {
+          "type": "string",
+          "description": "3ds Max is explicitly out of U6 scope — later phase after Fusion handoff."
+        }
+      }
+    },
+    "notes": { "type": "string" }
+  },
+  "required": ["schema_version", "subject_id", "domain", "units", "entries"],
+  "$defs": {
+    "confidence": {
+      "type": "string",
+      "enum": ["confirmed", "inferred"],
+      "description": "confirmed = measured/datasheet/operator-verified; inferred = estimated from photos/AI/scale — never claim leaf fitment on inferred alone."
+    },
+    "dimensionValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": "number", "exclusiveMinimum": 0 },
+        "units": { "type": "string", "enum": ["mm", "cm", "m", "in"] },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": {
+          "type": "string",
+          "description": "Source note: caliper reading, datasheet URL/title, photo frame id — never secrets."
+        }
+      },
+      "required": ["value", "confidence"]
+    },
+    "dimensionEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dim_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$"
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "value": { "type": "number" },
+        "units": { "type": "string", "enum": ["mm", "cm", "m", "in"] },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "axis": {
+          "type": "string",
+          "enum": [
+            "x",
+            "y",
+            "z",
+            "length",
+            "width",
+            "height",
+            "wheelbase",
+            "diameter",
+            "thickness",
+            "clearance",
+            "other"
+          ],
+          "default": "other"
+        },
+        "part_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$"
+          },
+          "uniqueItems": true,
+          "default": [],
+          "description": "BOM part_ids this dimension constrains."
+        },
+        "evidence": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["dim_id", "label", "value", "confidence"]
+    },
+    "mateLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mate_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$"
+        },
+        "from_part": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$"
+        },
+        "to_part": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$"
+        },
+        "mate_type": {
+          "type": "string",
+          "enum": [
+            "coincident",
+            "offset",
+            "axis",
+            "fastener",
+            "hinge",
+            "slider",
+            "gear",
+            "press_fit",
+            "other"
+          ]
+        },
+        "offset": { "type": "number" },
+        "units": { "type": "string", "enum": ["mm", "cm", "m", "in"] },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "dim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "default": [],
+          "description": "Dimension entries that justify this mate."
+        },
+        "notes": { "type": "string" }
+      },
+      "required": ["mate_id", "from_part", "to_part", "mate_type", "confidence"]
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mediawavetechnology.example/composite3dgen/schema/job.provider.schema.json",
+  "title": "JobProviderRecord",
+  "description": "Provider job record written under job_dir/out/<provider>/ and aggregated in manifests/provider_jobs.json. Live paid modes require CLI --spend; secrets never appear in records.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "provider": {
+      "type": "string",
+      "enum": ["triposr", "tripo", "hi3d", "rodin", "colmap", "meshroom", "blender", "seedance"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["dry-run", "local", "live"],
+      "description": "live requires --spend for paid cloud providers and justifying QA miss (or --no-prefer-local)."
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "queued", "running", "succeeded", "failed", "dry_run", "blocked"]
+    },
+    "consumed": {
+      "type": ["number", "null"],
+      "description": "API cost/credits consumed when known; local and dry-run stages use 0."
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Local paths or remote URLs for meshes / textures / planned payloads."
+    },
+    "remote_task_id": {
+      "type": ["string", "null"]
+    },
+    "error": {
+      "type": ["string", "null"]
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": ["schema_version", "provider", "mode", "job_id", "status"]
+}

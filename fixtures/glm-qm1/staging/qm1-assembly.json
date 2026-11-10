@@ -1,0 +1,139 @@
+{
+  "schema_version": "1.0.0",
+  "subject_id": "glm-qm1",
+  "tier": "L2",
+  "source": "staging",
+  "units": "blender",
+  "explode": {
+    "factor": 1.0,
+    "mode": "offset",
+    "notes": "Curated staging explode offsets for L1/L2 dry-run; leaf not claimed."
+  },
+  "parts": [
+    {
+      "part_id": "undercarriage",
+      "label": "Undercarriage",
+      "level": "L1",
+      "parent_id": null,
+      "mesh_names": ["undercarriage_mesh"],
+      "explode_offset": [0.0, -0.8, 0.0],
+      "provider_part_ref": "tripo:group/undercarriage",
+      "notes": "Tracks + lower frame group from recorded Tripo parts."
+    },
+    {
+      "part_id": "upper_structure",
+      "label": "Upper structure",
+      "level": "L1",
+      "parent_id": null,
+      "mesh_names": ["upper_structure_mesh"],
+      "explode_offset": [0.0, 0.6, 0.0],
+      "provider_part_ref": "tripo:group/upper_structure"
+    },
+    {
+      "part_id": "boom_assembly",
+      "label": "Boom assembly",
+      "level": "L1",
+      "parent_id": null,
+      "mesh_names": ["boom_assembly_mesh"],
+      "explode_offset": [1.2, 0.4, 0.0],
+      "provider_part_ref": "tripo:group/boom"
+    },
+    {
+      "part_id": "cabin",
+      "label": "Cabin",
+      "level": "L1",
+      "parent_id": null,
+      "mesh_names": ["cabin_mesh"],
+      "explode_offset": [-0.9, 0.5, 0.0],
+      "provider_part_ref": "tripo:group/cabin"
+    },
+    {
+      "part_id": "track_left",
+      "label": "Left track",
+      "level": "L2",
+      "parent_id": "undercarriage",
+      "mesh_names": ["track_left_mesh"],
+      "explode_offset": [-0.4, -0.2, 0.0],
+      "provider_part_ref": "tripo:part/track_left"
+    },
+    {
+      "part_id": "track_right",
+      "label": "Right track",
+      "level": "L2",
+      "parent_id": "undercarriage",
+      "mesh_names": ["track_right_mesh"],
+      "explode_offset": [0.4, -0.2, 0.0],
+      "provider_part_ref": "tripo:part/track_right"
+    },
+    {
+      "part_id": "slew_ring",
+      "label": "Slew ring",
+      "level": "L2",
+      "parent_id": "upper_structure",
+      "mesh_names": ["slew_ring_mesh"],
+      "explode_offset": [0.0, -0.15, 0.0],
+      "provider_part_ref": "tripo:part/slew_ring"
+    },
+    {
+      "part_id": "counterweight",
+      "label": "Counterweight",
+      "level": "L2",
+      "parent_id": "upper_structure",
+      "mesh_names": ["counterweight_mesh"],
+      "explode_offset": [0.0, 0.0, -0.5],
+      "provider_part_ref": "tripo:part/counterweight"
+    },
+    {
+      "part_id": "boom_main",
+      "label": "Main boom",
+      "level": "L2",
+      "parent_id": "boom_assembly",
+      "mesh_names": ["boom_main_mesh"],
+      "explode_offset": [0.5, 0.2, 0.0],
+      "provider_part_ref": "tripo:part/boom_main"
+    },
+    {
+      "part_id": "stick",
+      "label": "Stick / arm",
+      "level": "L2",
+      "parent_id": "boom_assembly",
+      "mesh_names": ["stick_mesh"],
+      "explode_offset": [0.9, 0.0, 0.0],
+      "provider_part_ref": "tripo:part/stick"
+    },
+    {
+      "part_id": "bucket",
+      "label": "Bucket",
+      "level": "L2",
+      "parent_id": "boom_assembly",
+      "mesh_names": ["bucket_mesh"],
+      "explode_offset": [1.3, -0.2, 0.0],
+      "provider_part_ref": "tripo:part/bucket"
+    },
+    {
+      "part_id": "cabin_shell",
+      "label": "Cabin shell",
+      "level": "L2",
+      "parent_id": "cabin",
+      "mesh_names": ["cabin_shell_mesh"],
+      "explode_offset": [-0.3, 0.15, 0.0],
+      "provider_part_ref": "tripo:part/cabin_shell"
+    }
+  ],
+  "meshes": [
+    {"mesh_name": "undercarriage_mesh", "part_id": "undercarriage"},
+    {"mesh_name": "upper_structure_mesh", "part_id": "upper_structure"},
+    {"mesh_name": "boom_assembly_mesh", "part_id": "boom_assembly"},
+    {"mesh_name": "cabin_mesh", "part_id": "cabin"},
+    {"mesh_name": "track_left_mesh", "part_id": "track_left"},
+    {"mesh_name": "track_right_mesh", "part_id": "track_right"},
+    {"mesh_name": "slew_ring_mesh", "part_id": "slew_ring"},
+    {"mesh_name": "counterweight_mesh", "part_id": "counterweight"},
+    {"mesh_name": "boom_main_mesh", "part_id": "boom_main"},
+    {"mesh_name": "stick_mesh", "part_id": "stick"},
+    {"mesh_name": "bucket_mesh", "part_id": "bucket"},
+    {"mesh_name": "cabin_shell_mesh", "part_id": "cabin_shell"}
+  ],
+  "artifacts": {},
+  "notes": "Staging L1/L2 for GLM QM1 dry-run. Sourced from curated Tripo parts grouping — NOT the live dump-truck qm1-assembly stub. Leaf BOM not claimed."
+}

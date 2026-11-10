@@ -1,0 +1,6 @@
+# Large mesh artifacts via Git LFS when committed (U5 media policy).
+# Fixture dry-run uses external refs under fixtures/*/recorded/media-refs.json
+# until LFS media is staged — do not invent dump-truck GLB binaries as truth.
+*.glb filter=lfs diff=lfs merge=lfs -text
+*.gltf filter=lfs diff=lfs merge=lfs -text
+*.fbx filter=lfs diff=lfs merge=lfs -text

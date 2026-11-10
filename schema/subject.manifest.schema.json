@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mediawavetechnology.example/composite3dgen/schema/subject.manifest.schema.json",
+  "title": "SubjectManifest",
+  "description": "Subject/domain/capture manifest for Composite3DGen ingest → pack stages (U2).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Manifest schema version."
+    },
+    "subject_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$",
+      "description": "Stable id used for job directory naming."
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable subject name."
+    },
+    "domain": {
+      "type": "string",
+      "enum": ["glm", "rc", "generic"],
+      "description": "Domain profile; GLM industrial, RC, or generic."
+    },
+    "units": {
+      "type": "string",
+      "enum": ["mm", "cm", "m", "in"],
+      "default": "mm",
+      "description": "Linear units for known_dimensions."
+    },
+    "known_dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "length": { "type": "number", "exclusiveMinimum": 0 },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 },
+        "notes": { "type": "string" }
+      },
+      "description": "Optional measured or inferred overall envelope."
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_type": {
+          "type": "string",
+          "enum": ["photos", "video", "mixed", "frames"],
+          "description": "Primary media kind under the job or relative media_paths."
+        },
+        "media_paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Paths relative to the job dir (or absolute) for photos/videos/frame dirs."
+        },
+        "frame_fps": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 2.0,
+          "description": "ffmpeg extract rate when source_type includes video."
+        },
+        "notes": { "type": "string" }
+      },
+      "required": ["source_type"]
+    },
+    "angles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["front", "left", "back", "right", "top", "iso"]
+          },
+          "uniqueItems": true,
+          "default": ["front", "left", "back", "right"],
+          "description": "Angles that must be present for a valid pack. Front is always enforced."
+        },
+        "optional": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["front", "left", "back", "right", "top", "iso"]
+          },
+          "uniqueItems": true,
+          "default": ["top", "iso"]
+        },
+        "hints": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 },
+          "description": "Optional map of angle → filename stem or relative path to force selection."
+        }
+      }
+    },
+    "reuse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prior_provider_outs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "provider": {
+                "type": "string",
+                "enum": ["triposr", "tripo", "hi3d", "rodin", "colmap", "meshroom", "blender"]
+              },
+              "path": { "type": "string", "minLength": 1 },
+              "notes": { "type": "string" }
+            },
+            "required": ["provider", "path"]
+          },
+          "description": "Pointers to prior GLM/Tripo outs for dry-run reuse (no re-spend)."
+        }
+      }
+    },
+    "notes": { "type": "string" }
+  },
+  "required": ["schema_version", "subject_id", "domain", "capture"]
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "provider": "tripo",
+  "mode": "live",
+  "job_id": "tripo-recorded-qm1-texture",
+  "status": "succeeded",
+  "consumed": 0.35,
+  "artifacts": {
+    "textured_glb_ref": "recorded/media-refs.json#tripo_textured_glb",
+    "task_type": "texture_on_parts",
+    "depends_on": "tripo-recorded-qm1-parts"
+  },
+  "remote_task_id": "fixture-tripo-qm1-texture-2026-10-21",
+  "error": null,
+  "notes": [
+    "RECORDED proof from prior GLM Tripo texture-on-parts run.",
+    "Reuse in dry-run only — do not re-submit; consumed is historical (not this run).",
+    "Textured GLB ~101MB — external / LFS ref only (see media-refs.json)."
+  ],
+  "meta": {
+    "recorded": true,
+    "subject_id": "glm-qm1",
+    "source_job": "video_deconstruction_2026-10-21",
+    "this_run_consumed": 0.0
+  }
+}

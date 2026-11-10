@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Secrets / local credentials — never commit
+*.pem
+*.key
+credentials.json
+secrets/
+.bw-session
+
+# Job / media working trees
+jobs/
+*.glb
+*.gltf
+*.obj
+*.fbx
+!fixtures/**/*.md
+
+# Generated pack / quality outputs (keep source frames + manifests)
+fixtures/**/build_packs/
+fixtures/**/out/
+fixtures/**/manifests/frame_quality.json
+fixtures/**/manifests/pack_angles.json
+fixtures/**/manifests/provider_jobs.json
+fixtures/**/manifests/dry_run_checklist.json
+fixtures/**/manifests/_pack_staging/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Coverage
+.coverage
+htmlcov/
