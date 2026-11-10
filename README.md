@@ -6,7 +6,7 @@ Primary local compute: **MWT1** (`ssh mwt1`) — TripoSR drafts, Blender explode
 
 ## Status
 
-**U5** — GLM QM1 fixture intake + end-to-end dry-run (`dry-run` CLI): packs → virtual providers → Blender L1/L2 → verification checklist at **$0** this-run (reuses recorded Tripo proofs; large GLBs via external/LFS refs). U4 Blender hub + U3b MWT1 contract underneath. Full QA ledger / spend hard-block: U7.
+**U6** — RC domain profile (DEX410 dimension register) + CadQuery adapter (prefer MWT1; missing-binary dry-run with structured next steps) + Fusion handoff docs (not 3ds Max) + photogrammetry adapter on MWT1 (COLMAP/Meshroom; dry-run until installed). U5 GLM dry-run E2E remains. Full QA ledger / spend hard-block: U7.
 
 ## Quick start
 
@@ -36,6 +36,8 @@ python -m composite3dgen build-packs path/to/job --executor local
 | `dry-run <job_dir>` | U5 E2E: packs → virtual providers → Blender L1/L2 → checklist. Refuses `--spend`; reuses recorded GLM/Tripo proofs. |
 | `route` | Print cost/quality route plan JSON without executing adapters. |
 | `explode [job_dir]` | U4: Blender Empty hierarchy + explode export + QA stills (MWT1 when capable; dry-run otherwise). |
+| `cad [job_dir]` | U6: CadQuery against dimension register (prefer MWT1; missing binary → `next_steps` dry-run). |
+| `photogrammetry [job_dir]` | U6: COLMAP/Meshroom on MWT1 (dry-run + install next steps when binaries missing). |
 | `doctor` | MWT1 capability matrix (SSH, jobs dir, ffmpeg, Pillow, CUDA, Blender, TripoSR, optional COLMAP). |
 | `doctor --live` | Attempt live SSH probes (LAN controller or mwt1 worker; cloud VMs typically fail closed). |
 
@@ -49,6 +51,7 @@ MWT1 is preferred for ffmpeg ingest / quality / packs / TripoSR / Blender explod
 | [docs/playbook/CAPTURE_CHECKLIST.md](docs/playbook/CAPTURE_CHECKLIST.md) | Multi-angle capture requirements |
 | [docs/playbook/COST_QUALITY_MATRIX.md](docs/playbook/COST_QUALITY_MATRIX.md) | Routing: local → TripoSR → cloud promote |
 | [docs/playbook/BOM_SCHEMA.md](docs/playbook/BOM_SCHEMA.md) | Hierarchy / explode depth (L1/L2/leaf) |
+| [docs/playbook/FUSION_HANDOFF.md](docs/playbook/FUSION_HANDOFF.md) | Fusion workstation handoff (v1 GUI; 3ds Max later) |
 
 ## Layout
 

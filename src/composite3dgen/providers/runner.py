@@ -14,6 +14,7 @@ from composite3dgen.providers.base import (
     ProviderJobResult,
 )
 from composite3dgen.providers.hi3d import Hi3DAdapter
+from composite3dgen.providers.photogrammetry import PhotogrammetryAdapter
 from composite3dgen.providers.rodin import RodinAdapter
 from composite3dgen.providers.router import RouteDecision, RoutePlan, RouteStage
 from composite3dgen.providers.tripo import TripoAdapter
@@ -29,6 +30,7 @@ class ProviderBundle:
     tripo: TripoAdapter = field(default_factory=TripoAdapter)
     hi3d: Hi3DAdapter = field(default_factory=Hi3DAdapter)
     rodin: RodinAdapter = field(default_factory=RodinAdapter)
+    photogrammetry: PhotogrammetryAdapter = field(default_factory=PhotogrammetryAdapter)
 
 
 @dataclass
@@ -57,6 +59,8 @@ def _adapter_for(stage: RouteStage, bundle: ProviderBundle):
         return bundle.hi3d
     if stage in ("rodin_bang", "rodin_gen25"):
         return bundle.rodin
+    if stage == "photogrammetry":
+        return bundle.photogrammetry
     return None
 
 
@@ -72,12 +76,15 @@ def _request_for(
         options["operation"] = "bang"
     elif decision.stage == "rodin_gen25":
         options["operation"] = "gen25"
-    # Photogrammetry is U6 — record dry stub only via synthetic result below.
+    # Photogrammetry (U6): local/MWT1 mode; never paid "live".
+    mode = decision.mode
+    if decision.stage == "photogrammetry" and mode == "live":
+        mode = "local"
     return ProviderJobRequest(
         provider=decision.provider,
         job_dir=job_dir,
         inputs=dict(inputs or {}),
-        mode=decision.mode,
+        mode=mode,
         options=options,
         subject_id=subject_id,
     )
@@ -91,29 +98,6 @@ async def _run_decision(
     subject_id: str | None,
     inputs: dict[str, Any] | None,
 ) -> ProviderJobResult:
-    if decision.stage == "photogrammetry":
-        # U6 owns COLMAP/Meshroom execution; U3 records the routed intent.
-        from composite3dgen.providers.base import new_job_id
-
-        result = ProviderJobResult(
-            provider="colmap",
-            job_id=new_job_id("colmap"),
-            status=JobStatus.DRY_RUN if decision.mode == "dry-run" else JobStatus.PENDING,
-            mode=decision.mode if decision.mode != "live" else "local",
-            consumed=0.0,
-            notes=[
-                "Photogrammetry stage reserved for U6 (COLMAP/Meshroom on MWT1).",
-                *decision.notes,
-            ],
-            meta={"stage": decision.stage, "block_reason": decision.block_reason},
-        )
-        out = Path(job_dir) / "out" / "colmap"
-        out.mkdir(parents=True, exist_ok=True)
-        (out / f"{result.job_id}.json").write_text(
-            json.dumps(result.to_record(), indent=2) + "\n", encoding="utf-8"
-        )
-        return result
-
     if decision.stage == "seedance":
         from composite3dgen.providers.base import new_job_id
 
@@ -235,11 +219,13 @@ def default_bundle(
         kwargs["transport"] = http
     if environ is not None:
         kwargs["environ"] = environ
+    photo = PhotogrammetryAdapter(transport=remote_fs) if remote_fs is not None else PhotogrammetryAdapter()
     return ProviderBundle(
         triposr=triposr,
         tripo=TripoAdapter(**kwargs) if kwargs else TripoAdapter(),
         hi3d=Hi3DAdapter(**kwargs) if kwargs else Hi3DAdapter(),
         rodin=RodinAdapter(**kwargs) if kwargs else RodinAdapter(),
+        photogrammetry=photo,
     )
 
 

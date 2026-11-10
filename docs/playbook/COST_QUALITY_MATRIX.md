@@ -52,8 +52,15 @@ capture OK?
 
 `composite3dgen doctor` probes SSH, job root, ffmpeg, Python image stack, CUDA/PyTorch, Blender, TripoSR pin, optional COLMAP/Meshroom. Executor selection prefers MWT1 only when **base** capabilities pass; TripoSR/Blender/photogrammetry stages additionally require their own caps (see WORKFLOW.md). Fail closed — do not invent Blender paths from cloud.
 
+## U6 local CAD / SfM notes
+
+- Photogrammetry adapter executes on MWT1 when `colmap` **or** Meshroom probes pass; otherwise dry-run + install next steps (`deploy/mwt1/photogrammetry.md`). Probe 2026-11-09: both missing.
+- CadQuery prefer MWT1; Fusion interactive edit on licensed workstation ([FUSION_HANDOFF.md](FUSION_HANDOFF.md)). 3ds Max = later phase.
+
 ## Related
 
 - [WORKFLOW.md](WORKFLOW.md) — stages and `--spend` policy
 - [BOM_SCHEMA.md](BOM_SCHEMA.md) — L1/L2 vs leaf
+- [FUSION_HANDOFF.md](FUSION_HANDOFF.md) — Fusion handoff
 - [`deploy/mwt1/README.md`](../../deploy/mwt1/README.md) — install / verify-on-LAN facts
+- [`deploy/mwt1/photogrammetry.md`](../../deploy/mwt1/photogrammetry.md) — COLMAP / Meshroom

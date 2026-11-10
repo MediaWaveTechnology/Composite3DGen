@@ -299,6 +299,73 @@ def build_parser() -> argparse.ArgumentParser:
         help="Print machine-readable summary JSON",
     )
 
+    cad = sub.add_parser(
+        "cad",
+        help=(
+            "U6: CadQuery RC leaf fitment against dimension register "
+            "(prefer MWT1; missing binary → structured next_steps dry-run). "
+            "Fusion GUI handoff is documented separately — not 3ds Max."
+        ),
+    )
+    cad.add_argument(
+        "job_dir",
+        type=Path,
+        help="Job / fixture directory (e.g. fixtures/rc-dex410)",
+    )
+    cad.add_argument(
+        "--register",
+        type=Path,
+        default=None,
+        help="Path to dimension-register.json (default: job_dir search)",
+    )
+    cad.add_argument(
+        "--script",
+        type=Path,
+        default=None,
+        help="Optional CadQuery Python script for parametric export",
+    )
+    cad.add_argument(
+        "--executor",
+        choices=("auto", "mwt1", "local"),
+        default="auto",
+        help="Force executor selection (default: auto — MWT1 if healthy)",
+    )
+    cad.add_argument(
+        "--json",
+        action="store_true",
+        help="Print machine-readable summary JSON",
+    )
+
+    photo = sub.add_parser(
+        "photogrammetry",
+        help=(
+            "U6: COLMAP/Meshroom on MWT1 (dry-run with next_steps when "
+            "binaries missing; see deploy/mwt1/photogrammetry.md)"
+        ),
+    )
+    photo.add_argument(
+        "job_dir",
+        type=Path,
+        help="Job directory with frames/ (orbit stills)",
+    )
+    photo.add_argument(
+        "--tool",
+        choices=("auto", "colmap", "meshroom"),
+        default="auto",
+        help="Prefer COLMAP or Meshroom (default: auto — COLMAP first)",
+    )
+    photo.add_argument(
+        "--executor",
+        choices=("auto", "mwt1", "local"),
+        default="auto",
+        help="Force executor selection (default: auto — MWT1 if healthy)",
+    )
+    photo.add_argument(
+        "--json",
+        action="store_true",
+        help="Print machine-readable summary JSON",
+    )
+
     return parser
 
 
@@ -567,6 +634,85 @@ def _cmd_dry_run(args: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
+def _cmd_cad(args: argparse.Namespace) -> int:
+    from composite3dgen.cad.cadquery_adapter import run_cadquery
+
+    prefer_mwt1 = bool(args.prefer_local)
+    force = _force_from_args(args.executor)
+    result = run_cadquery(
+        Path(args.job_dir),
+        register_path=args.register,
+        script_path=args.script,
+        prefer_mwt1=prefer_mwt1,
+        force_executor=force,  # type: ignore[arg-type]
+    )
+    summary = result.summary()
+    if args.json:
+        print(json.dumps(summary, indent=2))
+    else:
+        print(
+            f"cad ok={result.ok}: status={result.status} mode={result.mode} "
+            f"executor={result.executor.name} "
+            f"cadquery={summary['probe']['available']}"
+        )
+        if result.register:
+            print(
+                f"  register: confirmed={result.register.confirmed_count} "
+                f"inferred={result.register.inferred_count} "
+                f"leaf_fitment_allowed={result.register.leaf_fitment_allowed()}"
+            )
+        for step in result.next_steps[:6]:
+            print(f"  next: {step}")
+        for note in result.notes[:4]:
+            print(f"  note: {note}")
+        if result.error:
+            print(f"composite3dgen: error: {result.error}", file=sys.stderr)
+    if args.spend:
+        print(
+            "note: --spend ignored for cad (local CadQuery/MWT1 stage; $0). "
+            "Fusion GUI is workstation-licensed — not a cloud spend path.",
+            file=sys.stderr,
+        )
+    return 0 if result.ok else 1
+
+
+def _cmd_photogrammetry(args: argparse.Namespace) -> int:
+    from composite3dgen.providers.photogrammetry import run_photogrammetry
+
+    prefer_mwt1 = bool(args.prefer_local)
+    force = _force_from_args(args.executor)
+    tool = None if args.tool == "auto" else args.tool
+    result = run_photogrammetry(
+        Path(args.job_dir),
+        prefer_mwt1=prefer_mwt1,
+        force_executor=force,  # type: ignore[arg-type]
+        tool_preference=tool,  # type: ignore[arg-type]
+    )
+    summary = result.summary()
+    if args.json:
+        print(json.dumps(summary, indent=2))
+    else:
+        job = result.provider_result
+        print(
+            f"photogrammetry ok={result.ok}: mode={result.mode} "
+            f"executor={result.executor.name} "
+            f"tool={summary['probe']['preferred']} "
+            f"status={job.status.value}"
+        )
+        for step in result.next_steps[:6]:
+            print(f"  next: {step}")
+        for note in result.notes[:4]:
+            print(f"  note: {note}")
+        if job.error:
+            print(f"composite3dgen: error: {job.error}", file=sys.stderr)
+    if args.spend:
+        print(
+            "note: --spend ignored for photogrammetry (local MWT1 stage; $0).",
+            file=sys.stderr,
+        )
+    return 0 if result.ok else 1
+
+
 def _cmd_explode(args: argparse.Namespace) -> int:
     from composite3dgen.blender.jobs import run_blender_explode
 
@@ -641,6 +787,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "explode":
         return _cmd_explode(args)
+
+    if args.command == "cad":
+        return _cmd_cad(args)
+
+    if args.command == "photogrammetry":
+        return _cmd_photogrammetry(args)
 
     if args.command == "run":
         if not args.job_dir:

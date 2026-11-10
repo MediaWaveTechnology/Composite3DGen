@@ -90,8 +90,20 @@ L1/L2) → `manifests/dry_run_checklist.json`. Reuses recorded Tripo
 parts/texture task records; large GLBs are external/LFS refs only. Do **not**
 treat live dump-truck assembly stubs as QM1 truth. `dry-run` refuses `--spend`.
 
+## RC CAD + photogrammetry (U6)
+
+```bash
+python -m composite3dgen cad fixtures/rc-dex410 --executor local
+python -m composite3dgen photogrammetry path/to/job --executor local
+```
+
+CadQuery prefer MWT1; missing CadQuery/COLMAP/Meshroom → dry-run with structured
+`next_steps` (see `deploy/mwt1/photogrammetry.md`, [FUSION_HANDOFF.md](FUSION_HANDOFF.md)).
+3ds Max is later-phase — not invoked here. U7 QA ledger remains separate.
+
 ## Related
 
 - [COST_QUALITY_MATRIX.md](COST_QUALITY_MATRIX.md) — routing ladder
 - [CAPTURE_CHECKLIST.md](CAPTURE_CHECKLIST.md) — input quality
 - [BOM_SCHEMA.md](BOM_SCHEMA.md) — hierarchy depth
+- [FUSION_HANDOFF.md](FUSION_HANDOFF.md) — Fusion handoff (v1 GUI)

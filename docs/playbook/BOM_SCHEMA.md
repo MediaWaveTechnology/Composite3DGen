@@ -19,6 +19,7 @@ GLM staging assembly JSON historically held L1/L2 mesh groups only. Leaf BOM is 
 | `schema/parts.hierarchy.schema.json` | Canonical hierarchy + explode metadata (`schema_version` **1.0.0**) |
 | `schema/subject.manifest.schema.json` | Subject / domain / units / capture refs (U2) |
 | `schema/job.provider.schema.json` | Provider job records + cost fields (U3/U7) |
+| `schema/dimension.register.schema.json` | RC dimension register + mate-chain (U6; confirmed vs inferred) |
 | Job `out/blender/parts.json` | Instance export from Blender Empty parents |
 | Job `out/blender/exploded.glb` | Mesh + Empty hierarchy for DCC / web viewers |
 | Job `out/blender/verification/` | Orthographic + silhouette stills for QA |
@@ -77,8 +78,17 @@ MWT1 prefers probe-verified `/opt/homebrew/bin/blender` (then App bundle). Witho
 - Leaf claims require explicit tier flag + (for RC) dimension-register evidence.
 - Cost ledger marks Blender/local stages `$0`.
 
+## RC dimension register (U6)
+
+- Template + fixture: `fixtures/rc-dex410/dimension-register.json`
+- CadQuery: `composite3dgen cad` (prefer MWT1; missing binary → structured `next_steps`)
+- Fusion GUI handoff: [FUSION_HANDOFF.md](FUSION_HANDOFF.md) — **not** 3ds Max (later phase)
+- Leaf fitment requires ≥1 **confirmed** dimension; inferred-only registers fail validation
+
 ## Related
 
 - [WORKFLOW.md](WORKFLOW.md) — BOM depth gate
 - [COST_QUALITY_MATRIX.md](COST_QUALITY_MATRIX.md) — when to promote providers vs CAD
+- [FUSION_HANDOFF.md](FUSION_HANDOFF.md) — Fusion workstation path
 - `deploy/mwt1/README.md` — verified Blender Homebrew / App paths
+- `deploy/mwt1/photogrammetry.md` — COLMAP / Meshroom install

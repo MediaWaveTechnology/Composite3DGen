@@ -45,16 +45,16 @@ If MWT1 is unreachable, controller may run lightweight stages in **degraded mode
 | U3 | Provider adapters + cost router |
 | U3b | MWT1 node contract + health checks |
 | U4 | BOM schema + Blender explode/QA on MWT1 |
-| U5 | GLM fixture intake + dry-run E2E (this milestone) |
-| U6 | RC CAD + photogrammetry on MWT1 |
+| U5 | GLM fixture intake + dry-run E2E |
+| U6 | RC CAD + photogrammetry on MWT1 (this milestone) |
 | U7 | QA gates + cost ledger |
 
-U5 curates `fixtures/glm-qm1/` (cardinals, staging L1/L2, recorded Tripo
-parts/texture proofs, external/LFS media refs) and ships `dry-run` CLI:
-packs → virtual local/cloud providers → Blender hierarchy → verification
-checklist at $0 this-run. Do **not** treat dump-truck stubs as QM1 truth.
-Do not invent verified Blender paths from cloud. Keep transports injectable.
-`dry-run` refuses `--spend`.
+U6 ships `fixtures/rc-dex410/` (dimension register + mate-chain), CadQuery
+adapter (prefer MWT1; missing-binary dry-run with structured `next_steps`),
+Fusion handoff docs (**not** 3ds Max — later phase), and photogrammetry
+adapter (COLMAP/Meshroom on MWT1; dry-run until installed — see
+`deploy/mwt1/photogrammetry.md`). Do not invent COLMAP paths; probe found
+neither tool. No secrets / live paid cloud. U7 is hooks only beyond this unit.
 
 ## Testing
 
@@ -67,6 +67,8 @@ python -m composite3dgen route --stage triposr --stage tripo
 python -m composite3dgen run fixtures/u2-sample --executor local --json
 python -m composite3dgen explode fixtures/u2-sample --executor local --json
 python -m composite3dgen dry-run fixtures/glm-qm1 --executor local --json
+python -m composite3dgen cad fixtures/rc-dex410 --executor local --json
+python -m composite3dgen photogrammetry fixtures/rc-dex410 --executor local --json
 python -m composite3dgen doctor
 # LAN / mwt1 worker only:
 # python -m composite3dgen doctor --live
@@ -78,4 +80,5 @@ python -m composite3dgen doctor
 - Stages / gates / spend: `docs/playbook/WORKFLOW.md`
 - Capture: `docs/playbook/CAPTURE_CHECKLIST.md`
 - Routing: `docs/playbook/COST_QUALITY_MATRIX.md`
+- Fusion handoff: `docs/playbook/FUSION_HANDOFF.md`
 - BOM depth: `docs/playbook/BOM_SCHEMA.md`

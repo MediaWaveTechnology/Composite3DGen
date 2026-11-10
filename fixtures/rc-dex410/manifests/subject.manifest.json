@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "subject_id": "rc-dex410",
+  "display_name": "Team Durango DEX410 (RC domain profile fixture)",
+  "domain": "rc",
+  "units": "mm",
+  "known_dimensions": {
+    "length": 349.25,
+    "width": 248.92,
+    "notes": "Public review envelope (inferred). Confirmed chassis widths live in dimension-register.json."
+  },
+  "capture": {
+    "source_type": "photos",
+    "media_paths": ["frames"],
+    "notes": "Orbit / orthographic capture deferred — U6 ships register + CAD/photogrammetry adapters; add frames when curating review stills."
+  },
+  "angles": {
+    "required": ["front", "left", "back", "right"],
+    "optional": ["top", "iso"]
+  },
+  "reuse": {
+    "prior_provider_outs": [
+      {
+        "provider": "blender",
+        "path": "dimension-register.json",
+        "notes": "Dimension register is CAD evidence, not a mesh out — referenced here for job discovery."
+      }
+    ]
+  },
+  "notes": "U6 RC domain profile. Leaf fitment requires CadQuery + Fusion + confirmed dimension-register entries. Photogrammetry when orbit frames exist on MWT1."
+}
